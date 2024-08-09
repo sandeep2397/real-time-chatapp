@@ -1,3 +1,4 @@
+import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
 import session from 'express-session';
@@ -25,6 +26,8 @@ export const getUserSessionData = (req: Request): UserSessionData | undefined =>
 };
 
 const app = express();
+app.use(cors());
+
 const mongoURL = process.env.MONGO_URL ?? '';
 
 mongoose.connect(mongoURL, {}).then(() => {

@@ -142,7 +142,7 @@ const Login: FC<Props> = (props) => {
 
       try {
         const saveUser: any = await axios.post(
-          "/login",
+          `https://real-time-chatapp-sigma.vercel.app/login`,
           {
             userId: state.username || "",
           },
