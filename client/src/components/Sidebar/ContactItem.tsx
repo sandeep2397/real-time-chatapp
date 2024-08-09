@@ -1,10 +1,13 @@
 import { Avatar, ListItemAvatar, ListItemText } from "@mui/material";
 import { teal } from "@mui/material/colors";
 import React from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useGetUserName } from "../../hooks/customHook";
+import { currentSelectedPerson } from "../../redux/root_actions";
 import { ContactItemContainer, Timestamp } from "./Sidebar.styles";
 
 interface ContactItemProps {
-  name: string;
+  preferedName: string;
   username: string;
   lastMessage: string;
   timestamp: string;
@@ -12,27 +15,54 @@ interface ContactItemProps {
 }
 
 const ContactItem: React.FC<ContactItemProps> = ({
-  name,
+  preferedName,
   username,
   lastMessage,
   timestamp,
   avatar,
 }) => {
+  const dispatch = useDispatch();
+  const authUserName = useGetUserName();
   const userRegex = /^\d+$/;
+  const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
+  const shouldHighlight = selectedUser?.username === username;
+  const socket = useSelector((state: any) => state?.Common?.socket);
 
   return (
-    <ContactItemContainer>
+    <ContactItemContainer
+      style={{
+        backgroundColor: shouldHighlight ? `#88dabc` : "#fff",
+      }}
+      onClick={() => {
+        if (socket) {
+          socket.emit("new-user-chat", {
+            sender: authUserName,
+            recipient: username,
+          });
+        }
+
+        dispatch(
+          currentSelectedPerson({
+            preferedName,
+            username,
+            lastMessage,
+            timestamp,
+            avatar,
+          })
+        );
+      }}
+    >
       <ListItemAvatar>
         <Avatar
           alt={
-            (!userRegex.test(name) && name?.toUpperCase()) ||
-            name?.toUpperCase()
+            (!userRegex.test(preferedName) && preferedName?.toUpperCase()) ||
+            preferedName?.toUpperCase()
           }
           sx={{ bgcolor: teal?.[500], width: 32, height: 32 }}
           src="/static/images/avatar/2.jpg"
         />
       </ListItemAvatar>
-      <ListItemText primary={name} secondary={lastMessage} />
+      <ListItemText primary={preferedName} secondary={lastMessage} />
       <Timestamp>{timestamp}</Timestamp>
     </ContactItemContainer>
   );

@@ -1,7 +1,6 @@
 import {
   Alert,
   Box,
-  Button,
   Card,
   CircularProgress,
   Container,
@@ -32,7 +31,11 @@ import { ConfirmationResult, signInWithEmailAndPassword } from "firebase/auth";
 import { useDispatch } from "react-redux";
 import io from "socket.io-client";
 import { customAuth } from "./firebaseConfig";
-import { saveSocket } from "./redux/root_actions";
+import {
+  currentSelectedPerson,
+  saveContacts,
+  saveSocket,
+} from "./redux/root_actions";
 
 interface Props {
   children?: null;
@@ -74,6 +77,7 @@ const Login: FC<Props> = (props) => {
 
   useEffect(() => {
     if (username) {
+      dispatch(currentSelectedPerson({}));
       const newSocket = io(socketEndpoint, {
         // query: { username }, // Pass username in query params or through a connection event
         transports: ["websocket"],
@@ -91,6 +95,10 @@ const Login: FC<Props> = (props) => {
         // sessionStorage.setItem("socket", newSocketStr);
         dispatch(saveSocket(newSocket));
         newSocket.emit("join", username); // Emit a join event with the username
+      });
+
+      newSocket.on("loadcontacts", (contacts: any) => {
+        dispatch(saveContacts(contacts));
         navigate("/home");
       });
 
@@ -98,6 +106,7 @@ const Login: FC<Props> = (props) => {
       return () => {
         newSocket.off("join");
         newSocket.off("loadmessages");
+        newSocket && newSocket.off("loadcontacts");
       };
     }
   }, [username]);
@@ -230,7 +239,7 @@ const Login: FC<Props> = (props) => {
       cookies.set("user-info", tempdata, {
         path: "/",
       });
-      navigate("/imageupload");
+      // navigate("/imageupload");
       setLoginLoading(false);
       // dispatch(captureLoggedInUser(credential));
 
@@ -400,9 +409,9 @@ const Login: FC<Props> = (props) => {
                   </WelcomeLabel>
                 </LoginButton>
               </FormControl>
-              <Button color="primary" onClick={() => {}}>
+              {/* <Button color="primary" onClick={() => {}}>
                 Sign In with Phone Number
-              </Button>
+              </Button> */}
             </StyledForm>
           </Container>
         </LoginLayoutWrapper>

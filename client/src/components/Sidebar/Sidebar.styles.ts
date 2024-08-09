@@ -2,14 +2,14 @@ import styled from "@emotion/styled";
 
 export const SidebarContainer = styled("div")`
   width: 30%;
-  background-color: #f0f0f0;
+  background-color: #fff;
   display: flex;
   flex-direction: column;
 `;
 
 export const SidebarHeader = styled("div")`
   padding: 15px;
-  background-color: #ededed;
+  background-color: #f8f7f7;
 `;
 
 export const ContactsList = styled("div")`
@@ -23,7 +23,7 @@ export const ContactItemContainer = styled("div")`
   cursor: pointer;
 
   &:hover {
-    background-color: #e0e0e0;
+    background: #ededed !important;
   }
 `;
 

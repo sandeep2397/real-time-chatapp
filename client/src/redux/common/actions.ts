@@ -6,6 +6,8 @@ import {
   COMMON_ACTION,
   COMMON_ACTION_FAILED,
   COMMON_ACTION_SUCCESS,
+  CURRENT_SELECTED_PERSON,
+  SAVE_CONTACTS,
   SAVE_LOGGED_IN_DATA,
   SAVE_MENU_STATE,
   SAVE_SOCKET,
@@ -65,5 +67,13 @@ export const setCachedMediaList = (data: any): CommonAction => ({
 });
 export const saveSocket = (data: any): CommonAction => ({
   type: SAVE_SOCKET,
+  payload: data,
+});
+export const currentSelectedPerson = (data: any): CommonAction => ({
+  type: CURRENT_SELECTED_PERSON,
+  payload: data,
+});
+export const saveContacts = (data: any): CommonAction => ({
+  type: SAVE_CONTACTS,
   payload: data,
 });

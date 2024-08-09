@@ -99,6 +99,26 @@ io.use((socket, next) => {
   sessionMiddleware(req, res, next as NextFunction);
 });
 
+function convertTo12HourFormat(gmtDateString: string) {
+  // Parse the GMT date string into a Date object
+  const date = new Date(gmtDateString);
+
+  // Extract components
+  const options: any = {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZone: 'GMT',
+  };
+
+  // Convert to 12-hour format
+  const timeString = date.toLocaleTimeString('en-US', options);
+
+  // Format the final string
+  return `${date.toDateString()} ${timeString} GMT`;
+}
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
   const req = socket.request as any;
@@ -109,21 +129,19 @@ io.on('connection', (socket) => {
     const username = userId?.split('@')?.[0];
     socket.join(username);
 
-    const loadMessages = async () => {
+    const loadContacts = async () => {
       try {
-        const sessionUsername = req.session.username;
-        const chats: any = await Chat.find({ participants: { $all: [userData?.username] } })
-          .sort({ timeStamp: 1 })
-          .exec();
-
-        console.log(`messages for user ${username} loaded========>`);
-        socket.emit('loadmessages', chats[0]?.messages || []);
+        const dbUser: any = await User.findOne({ username: userData?.username });
+        console.log(`${dbUser?.contacts?.length ?? 0} contacts exists for user ${username} loaded========>`);
+        socket.emit('loadcontacts', dbUser?.contacts || []);
       } catch (err) {
         console.log(err);
       }
     };
+
     if (userData?.username) {
-      loadMessages();
+      loadContacts();
+      //   loadMessages();
     }
     // req.session.save((err: any) => {
     //   if (!err) {
@@ -137,17 +155,39 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('new-user-chat', ({ sender, recipient }: any) => {
+    const username = userData?.username;
+    const loadMessages = async () => {
+      try {
+        const sessionUsername = req.session.username;
+        const chats: any = await Chat.find({ participants: { $all: [userData?.username, recipient] } })
+          .sort({ timeStamp: 1 })
+          .exec();
+
+        console.log(`${chats[0]?.messages?.length ?? 0} messages for user ${username} loaded========>`);
+        socket.emit('loadmessages', chats[0]?.messages || []);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    if (userData?.username) {
+      loadMessages();
+    }
+  });
+
   socket.on('send_message', async ({ content, recipient }: { content: string; recipient: string }) => {
     const sessionUsername = userData?.username;
-    console.log('Session username in send_message:', userData?.username);
+    console.log('new message from send_message:' + recipient + 'to ' + sessionUsername);
     if (!sessionUsername) return;
 
     const chat = await Chat.findOne({ participants: { $all: [sessionUsername, recipient] } });
     if (!chat) {
+      const gmtDateString = new Date().toDateString();
+      const convertedDateString = convertTo12HourFormat(gmtDateString);
       const msgObj: IMessages = {
         sender: sessionUsername,
         content,
-        timestamp: new Date().toDateString(),
+        timestamp: convertedDateString,
         type: 'text',
       };
       const newChat = new Chat({
@@ -157,13 +197,15 @@ io.on('connection', (socket) => {
       await newChat.save();
     } else {
       const oldMsgs: any = chat.messages || [];
+      const gmtDateString = new Date().toDateString();
+      const convertedDateString = convertTo12HourFormat(gmtDateString);
       let newMsgs =
-        [...oldMsgs, { sender: sessionUsername, content, timestamp: new Date().toDateString(), type: 'text' }] || [];
+        [...oldMsgs, { sender: sessionUsername, content, timestamp: convertedDateString, type: 'text' }] || [];
       await chat.updateOne({
         messages: newMsgs,
       });
     }
-    io.emit('new_message', { sender: sessionUsername, content });
+    io.to(recipient).emit('new_message', { sender: sessionUsername, content });
   });
 
   socket.on('disconnect', (reason) => {

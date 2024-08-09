@@ -7,6 +7,8 @@ import {
   COMMON_ACTION,
   COMMON_ACTION_FAILED,
   COMMON_ACTION_SUCCESS,
+  CURRENT_SELECTED_PERSON,
+  SAVE_CONTACTS,
   SAVE_LOGGED_IN_DATA,
   SAVE_MENU_STATE,
   SAVE_SOCKET,
@@ -36,6 +38,8 @@ type State = {
   loggedInData: any;
   socket: Socket | any;
   cachedMediaData: Array<any>;
+  selectedUser: any;
+  contacts: Array<any>;
 };
 
 const INIT_STATE = {
@@ -43,11 +47,13 @@ const INIT_STATE = {
   fieldsJson: [],
   fieldsState: {},
   socket: null,
+  contacts: [],
   stepperState: {
     activeStep: 0,
     id: "",
   },
   loggedInData: {},
+  selectedUser: {},
   sessionPrompt: false,
   snackbar: {
     isOpen: false,
@@ -86,6 +92,10 @@ const Common = (state: State = INIT_STATE, action: CommonAction) => {
       return { ...state, cachedMediaData: action.payload };
     case SAVE_SOCKET:
       return { ...state, socket: action.payload };
+    case CURRENT_SELECTED_PERSON:
+      return { ...state, selectedUser: action.payload };
+    case SAVE_CONTACTS:
+      return { ...state, contacts: action.payload };
     default:
       return { ...state };
   }
