@@ -38,7 +38,7 @@ interface Props {
   children?: null;
 }
 
-const socketEndpoint = "http://localhost:4001"; // Your server's URL
+const socketEndpoint = "https://real-time-chatapp-sigma.vercel.app"; // Your server's URL
 
 const Login: FC<Props> = (props) => {
   const navigate = useNavigate();

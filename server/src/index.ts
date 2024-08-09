@@ -69,7 +69,7 @@ const io = new Server(httpServer, {
   pingTimeout: 60000000, // Increase timeout if needed (in milliseconds)
   pingInterval: 25000000, // Adjust ping interval (in milliseconds)
   cors: {
-    origin: 'http://localhost:4000',
+    origin: ['http://localhost:4000', 'https://real-time-chatapp-sigma.vercel.app'],
     methods: ['GET', 'POST'],
     credentials: true, // Allow cookies to be sent
   },
