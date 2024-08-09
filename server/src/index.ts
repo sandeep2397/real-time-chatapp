@@ -1,87 +1,162 @@
 import dotenv from 'dotenv';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
+import session from 'express-session';
 import { createServer } from 'http';
+import mongoose from 'mongoose';
 import { Server } from 'socket.io';
-import { MongoConnection } from './db.js';
+import { Chat, IMessages } from './models/Chat.js';
+import { User } from './models/Users.js';
+
 dotenv.config();
 
-const app = express();
+export interface UserSessionData {
+  username: string;
+  userId: string;
+}
 
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    // origin: 'http://localhost:4000', // Frontend URL
-    // methods: ['GET', 'POST'],
-    origin: '*',
+declare module 'express-session' {
+  interface SessionData {
+    userData: UserSessionData;
+  }
+}
+
+export const getUserSessionData = (req: Request): UserSessionData | undefined => {
+  return req.session.userData;
+};
+
+const app = express();
+const mongoURL = process.env.MONGO_URL ?? '';
+
+mongoose.connect(mongoURL, {}).then(() => {
+  console.log('Connected to MongoDB:', mongoURL);
+});
+
+const sessionMiddleware = session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  store: new session.MemoryStore(),
+  cookie: {
+    maxAge: 60000000,
   },
 });
 
-/**
- * Normalize a port into a number, string, or false.
- */
+app.use(sessionMiddleware);
+app.use(express.json());
 
-function normalizePort(val: any) {
-  const p: number = parseInt(val, 10);
+// HTTP route for login
+app.post('/login', async (req: Request, res: Response) => {
+  const userId = req.body?.userId;
+  const username = userId?.split('@')?.[0];
+  const newUser = new User({ userId, username, online: true });
+  await newUser.save();
+  req.session.userData = {
+    username: username,
+    userId,
+  };
+  req.session.save((err: any) => {
+    if (!err) {
+      console.log('Session saved successfully', req.session);
+    } else {
+      console.log(`Error saving session: ${err}`);
+    }
+  });
+  res.json({ status: 200, msg: 'Logged in successfully', user: newUser });
+});
 
-  if (Number.isNaN(p)) {
-    // named pipe
-    return val;
-  }
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  pingTimeout: 60000000, // Increase timeout if needed (in milliseconds)
+  pingInterval: 25000000, // Adjust ping interval (in milliseconds)
+  cors: {
+    origin: 'http://localhost:4000',
+    methods: ['GET', 'POST'],
+    credentials: true, // Allow cookies to be sent
+  },
+});
 
-  if (p >= 0) {
-    // port number
-    return p;
-  }
-
-  return false;
-}
-
-/**
- * Get port from environment and store in Express.
- */
-export const port: number = normalizePort(process.env.PORT || '4001');
-app.set('port', port);
+// Middleware for Socket.io to use session
+io.use((socket, next) => {
+  const req = socket.request as Request;
+  const res = {} as Response; // Mock response object
+  sessionMiddleware(req, res, next as NextFunction);
+});
 
 io.on('connection', (socket) => {
-  console.log('a user connected:', socket.id);
+  console.log('User connected:', socket.id);
+  const req = socket.request as any;
+  const userData = getUserSessionData(req);
+  console.log('User session Data:', userData);
 
-  socket.on('message', (message) => {
-    console.log('message:', message);
-    io.emit('message', message); // Broadcast the message to all clients
+  socket.on('join', (userId: string) => {
+    const username = userId?.split('@')?.[0];
+    socket.join(username);
+
+    const loadMessages = async () => {
+      try {
+        const sessionUsername = req.session.username;
+        const chats: any = await Chat.find({ participants: { $all: [userData?.username] } })
+          .sort({ timeStamp: 1 })
+          .exec();
+
+        // console.log('messages========>', chats[0]?.messages);
+        socket.emit('loadmessages', chats[0]?.messages || []);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    if (userData?.username) {
+      loadMessages();
+    }
+    // req.session.save((err: any) => {
+    //   if (!err) {
+    //     console.log('Session saved successfully', req.session);
+    //   } else {
+    //     console.log(`Error saving session: ${err}`);
+    //   }
+    // });
+    if (username) {
+      User.findOneAndUpdate({ username: username }, { online: true });
+    }
   });
-  ``;
-  socket.on('disconnect', () => {
-    console.log('user disconnected:', socket.id);
+
+  socket.on('send_message', async ({ content, recipient }: { content: string; recipient: string }) => {
+    const sessionUsername = userData?.username;
+    console.log('Session username in send_message:', userData?.username);
+    if (!sessionUsername) return;
+
+    const chat = await Chat.findOne({ participants: { $all: [sessionUsername, recipient] } });
+    if (!chat) {
+      const msgObj: IMessages = {
+        sender: sessionUsername,
+        content,
+        timestamp: new Date().toDateString(),
+        type: 'text',
+      };
+      const newChat = new Chat({
+        participants: [sessionUsername, recipient],
+        messages: [msgObj],
+      });
+      await newChat.save();
+    } else {
+      const oldMsgs: any = chat.messages || [];
+      let newMsgs =
+        [...oldMsgs, { sender: sessionUsername, content, timestamp: new Date().toDateString(), type: 'text' }] || [];
+      await chat.updateOne({
+        messages: newMsgs,
+      });
+    }
+    io.emit('new_message', { sender: sessionUsername, content });
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('User disconnected:', userData?.username);
+    console.log('reason:', reason);
+    if (userData?.username) {
+      User.findOneAndUpdate({ username: userData?.username }, { online: false });
+    }
   });
 });
 
-function onError(error: any) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  const bind = typeof port === 'string' ? `Pipe  ${port}` : `Port  ${port}`;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.log(`${bind} requires elevated privileges`);
-      console.error(error);
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(error);
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-MongoConnection().then(() => {
-  // console.log('Connected to MongoDB');
-  httpServer.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
-});
-
-httpServer.on('error', onError);
+const port = process.env.PORT || 4001;
+httpServer.listen(port, () => console.log(`Server running on port ${port}`));

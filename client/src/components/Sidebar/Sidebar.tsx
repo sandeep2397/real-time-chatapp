@@ -1,13 +1,32 @@
-import { InputBase } from "@mui/material";
-import React from "react";
+import {
+  Avatar,
+  IconButton,
+  InputBase,
+  ListItemAvatar,
+  ListItemText,
+} from "@mui/material";
+import React, { useState } from "react";
+import { MdLogout } from "react-icons/md";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router";
+import { removeSession } from "../../utils/auth";
 import ContactItem from "./ContactItem";
 import {
+  ContactItemContainer,
   ContactsList,
   SidebarContainer,
   SidebarHeader,
 } from "./Sidebar.styles";
 
 const Sidebar: React.FC = () => {
+  const navigate = useNavigate();
+  const userInfo = JSON.parse(sessionStorage.getItem("user") || "");
+  // const [socket, setSocket] = useState<any>(null);
+  const socket = useSelector((state: any) => state?.Common?.socket);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [username, setUsername] = useState("");
+
   const contacts = [
     {
       name: "John Doe",
@@ -40,6 +59,26 @@ const Sidebar: React.FC = () => {
           <ContactItem key={index} {...contact} />
         ))}
       </ContactsList>
+      <ContactItemContainer>
+        <ListItemAvatar>
+          <Avatar src={"../assests"} />
+        </ListItemAvatar>
+        <ListItemText primary={`logged In as ${userInfo?.username}`} />
+      </ContactItemContainer>
+      <IconButton
+        aria-label="toggle password visibility"
+        onClick={() => {
+          if (socket) {
+            socket.disconnect(); // Disconnect the socket
+            console.log("Socket disconnected:", socket.id);
+          }
+
+          removeSession();
+          navigate("/login");
+        }}
+      >
+        <MdLogout /> Logout
+      </IconButton>
     </SidebarContainer>
   );
 };

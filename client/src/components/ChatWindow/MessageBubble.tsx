@@ -1,5 +1,6 @@
 import { Typography } from "@mui/material";
 import React from "react";
+import { useGetUserName } from "../../hooks/customHook";
 import { MessageBubble as BubbleContainer } from "./ChatWindow.styles";
 
 interface MessageBubbleProps {
@@ -14,8 +15,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   content,
   timestamp,
 }) => {
+  const username = useGetUserName();
   return (
-    <BubbleContainer isMine={sender === "Me"}>
+    <BubbleContainer isMine={sender === username}>
       <Typography>{content}</Typography>
       <Typography variant="caption" color="textSecondary">
         {timestamp}
