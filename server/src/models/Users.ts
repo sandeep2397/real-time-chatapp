@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
 // User schema and model
+export type IContact = {
+  username: string;
+  preferedName: string;
+};
 const userSchema = new mongoose.Schema({
   username: String,
-  userid: String,
+  userId: String,
   online: Boolean,
+  contacts: { type: Array<IContact>, required: false },
 });
-export const User = mongoose.model('User', userSchema);
+export const User = mongoose.model('users', userSchema);

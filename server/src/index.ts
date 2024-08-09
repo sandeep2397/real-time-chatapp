@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import { Chat, IMessages } from './models/Chat.js';
 import { User } from './models/Users.js';
+import contacts from './stubbedContacts.js';
 
 dotenv.config();
 
@@ -51,8 +52,8 @@ app.use(express.json());
 app.post('/login', async (req: Request, res: Response) => {
   const userId = req.body?.userId;
   const username = userId?.split('@')?.[0];
-  const newUser = new User({ userId, username, online: true });
-  await newUser.save();
+
+  const user = await User.findOne({ userId });
   req.session.userData = {
     username: username,
     userId,
@@ -64,7 +65,20 @@ app.post('/login', async (req: Request, res: Response) => {
       console.log(`Error saving session: ${err}`);
     }
   });
-  res.json({ status: 200, msg: 'Logged in successfully', user: newUser });
+
+  if (user) {
+    res.json({ status: 200, msg: 'Logged in successfully', user });
+  } else {
+    const filteredContacts = contacts?.filter((contact: any) => contact.username !== username);
+    const newUser = new User({ userId, username, contacts: filteredContacts, online: true });
+    try {
+      await newUser.save();
+      console.log('User Added successfully');
+    } catch (err: any) {
+      console.error('Failed to save user', err?.message);
+    }
+    res.json({ status: 200, msg: 'Logged in successfully', user: newUser });
+  }
 });
 
 const httpServer = createServer(app);
@@ -102,7 +116,7 @@ io.on('connection', (socket) => {
           .sort({ timeStamp: 1 })
           .exec();
 
-        // console.log('messages========>', chats[0]?.messages);
+        console.log(`messages for user ${username} loaded========>`);
         socket.emit('loadmessages', chats[0]?.messages || []);
       } catch (err) {
         console.log(err);

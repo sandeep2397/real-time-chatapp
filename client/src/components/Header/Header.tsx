@@ -8,7 +8,7 @@ const Header: React.FC = () => {
     <HeaderContainer>
       <Avatar src="/path/to/avatar.jpg" />
       <ContactInfo>
-        <Typography variant="body1">John Doe</Typography>
+        <Typography variant="body1">Sagya</Typography>
         <Typography variant="caption" color="textSecondary">
           Online
         </Typography>

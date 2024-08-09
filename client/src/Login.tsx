@@ -38,7 +38,7 @@ interface Props {
   children?: null;
 }
 
-const socketEndpoint = "https://real-time-chatapp-sigma.vercel.app"; // Your server's URL
+const socketEndpoint = "http://localhost:4001"; // Your server's URL
 
 const Login: FC<Props> = (props) => {
   const navigate = useNavigate();
@@ -142,7 +142,7 @@ const Login: FC<Props> = (props) => {
 
       try {
         const saveUser: any = await axios.post(
-          `https://real-time-chatapp-sigma.vercel.app/login`,
+          `/login`,
           {
             userId: state.username || "",
           },

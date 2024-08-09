@@ -34,6 +34,8 @@ const MessageInput: FC<props> = ({ sendMessage }: props) => {
         onChange={(e) => setMessage(e.target.value)}
       />
       <SendButton
+        style={{ height: "45px", width: "45px" }}
+        disabled={message === ""}
         onClick={() => {
           setMessage("");
         }}

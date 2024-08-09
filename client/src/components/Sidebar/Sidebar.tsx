@@ -1,14 +1,16 @@
 import {
   Avatar,
-  IconButton,
   InputBase,
   ListItemAvatar,
   ListItemText,
+  useTheme,
 } from "@mui/material";
+import { deepOrange } from "@mui/material/colors";
 import React, { useState } from "react";
 import { MdLogout } from "react-icons/md";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
+import { LoginButton, WelcomeLabel } from "../../style";
 import { removeSession } from "../../utils/auth";
 import ContactItem from "./ContactItem";
 import {
@@ -26,22 +28,27 @@ const Sidebar: React.FC = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [username, setUsername] = useState("");
+  const userRegex = /^\d+$/;
+  const theme = useTheme();
 
   const contacts = [
     {
-      name: "John Doe",
+      name: "Sagya",
+      username: "sagar",
       lastMessage: "Hey there!",
       timestamp: "12:34 PM",
       avatar: "/path/to/avatar.jpg",
     },
     {
-      name: "John Doe",
+      name: "Darya",
+      username: "darshan",
       lastMessage: "Hey there!",
       timestamp: "12:34 PM",
       avatar: "/path/to/avatar.jpg",
     },
     {
-      name: "John Doe",
+      name: "Vamshi",
+      username: "vamshi",
       lastMessage: "Hey there!",
       timestamp: "12:34 PM",
       avatar: "/path/to/avatar.jpg",
@@ -61,24 +68,46 @@ const Sidebar: React.FC = () => {
       </ContactsList>
       <ContactItemContainer>
         <ListItemAvatar>
-          <Avatar src={"../assests"} />
+          <Avatar
+            alt={
+              !userRegex.test(userInfo?.username) &&
+              userInfo?.username?.toUpperCase()
+            }
+            sx={{ bgcolor: deepOrange?.[500], width: 38, height: 38 }}
+            src="/static/images/avatar/2.jpg"
+          />
         </ListItemAvatar>
-        <ListItemText primary={`logged In as ${userInfo?.username}`} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <ListItemText
+            secondary={"Logged In As"}
+            style={{ color: "#a7a7a7" }}
+          />
+          <ListItemText
+            primary={`${userInfo?.username}`}
+            style={{ margin: "0px", fontWeight: 500 }}
+          />
+        </div>
       </ContactItemContainer>
-      <IconButton
-        aria-label="toggle password visibility"
+
+      <LoginButton
+        style={{ width: "95%", alignSelf: "center" }}
         onClick={() => {
           if (socket) {
             socket.disconnect(); // Disconnect the socket
             console.log("Socket disconnected:", socket.id);
           }
-
           removeSession();
           navigate("/login");
         }}
+        variant="contained"
+        type="submit"
+        startIcon={<MdLogout />}
+        // disabled={state?.username === '' || state?.password === ''}
       >
-        <MdLogout /> Logout
-      </IconButton>
+        <WelcomeLabel color={theme?.palette?.primary?.contrastText}>
+          {"Logout"}
+        </WelcomeLabel>
+      </LoginButton>
     </SidebarContainer>
   );
 };

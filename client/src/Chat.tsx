@@ -1,11 +1,11 @@
 import { Box } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import "./App.css";
 import ChatWindow from "./components/ChatWindow/ChatWindow";
 import Header from "./components/Header/Header";
 import MessageInput from "./components/MessageInput/MessageInput";
 import Sidebar from "./components/Sidebar/Sidebar";
-
 // const socket = io("http://localhost:4001");
 
 const Chat: React.FC = () => {
