@@ -89,33 +89,36 @@ app.post('/api/login', async (req: Request, res: Response) => {
   const userId = req.body?.userId;
   const username = userId?.split('@')?.[0];
   console.log('!!!! /login entered');
-  const user = await User.findOne({ userId });
-  req.session.userData = {
-    username: username,
-    userId,
-  };
-  req.session.save((err: any) => {
-    if (!err) {
-      console.log('Session saved successfully', req.session);
+  try {
+    const user = await User.findOne({ userId });
+    req.session.userData = {
+      username: username,
+      userId,
+    };
+    req.session.save((err: any) => {
+      if (!err) {
+        console.log('Session saved successfully', req.session);
+      } else {
+        console.log(`Error saving session: ${err}`);
+      }
+    });
+
+    if (user) {
+      res.json({ status: 200, msg: 'Logged in successfully', user });
     } else {
-      console.log(`Error saving session: ${err}`);
+      const filteredContacts = contacts?.filter((contact: any) => contact.username !== username);
+      const newUser = new User({ userId, username, contacts: filteredContacts, online: true, socketId: '' });
+      try {
+        await newUser.save();
+        console.log('User Added successfully');
+      } catch (err: any) {
+        console.error('Failed to save user', err?.message);
+      }
+      res.json({ status: 200, msg: 'Logged in successfully', user: newUser });
     }
-  });
-
-  if (user) {
-    res.json({ status: 200, msg: 'Logged in successfully', user });
-  } else {
-    const filteredContacts = contacts?.filter((contact: any) => contact.username !== username);
-    const newUser = new User({ userId, username, contacts: filteredContacts, online: true, socketId: '' });
-    try {
-      console.log('!!!!newUser Mongo');
-
-      //   await newUser.save();
-      console.log('User Added successfully');
-    } catch (err: any) {
-      console.error('Failed to save user', err?.message);
-    }
-    res.json({ status: 200, msg: 'Logged in successfully', user: newUser });
+  } catch (err) {
+    console.error('!!!! /login error');
+    res.json({ status: 400, msg: 'mongo error in successfully', err });
   }
 });
 
