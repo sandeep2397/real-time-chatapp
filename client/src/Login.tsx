@@ -41,7 +41,8 @@ interface Props {
   children?: null;
 }
 
-const socketEndpoint = "http://localhost:4001"; // Your server's URL
+const socketEndpoint = `https://real-time-chatapp-sigma.vercel.app`;
+// const socketEndpoint = "http://localhost:4001"; // Your server's URL
 
 const Login: FC<Props> = (props) => {
   const navigate = useNavigate();
@@ -93,6 +94,20 @@ const Login: FC<Props> = (props) => {
         //   socket: newSocket,
         // });
         // sessionStorage.setItem("socket", newSocketStr);
+        // let cookieData = {
+        //   jwtToken: loginResp?.user?.accessToken,
+        // };
+
+        let userInfo = JSON.stringify({
+          username: username,
+        });
+
+        sessionStorage.setItem("user", userInfo);
+
+        // let tempdata = JSON.stringify(cookieData);
+        // cookies.set("user-info", tempdata, {
+        //   path: "/",
+        // });
         dispatch(saveSocket(newSocket));
         newSocket.emit("join", username); // Emit a join event with the username
       });
@@ -151,30 +166,16 @@ const Login: FC<Props> = (props) => {
 
       try {
         const saveUser: any = await axios.post(
-          `http://localhost:4001/api/login`,
+          // `http://localhost:4001/api/login`,
+          `${socketEndpoint}/api/login`,
           {
             userId: state.username || "",
-          }
+          },
+          { withCredentials: true }
         );
 
         if (saveUser) {
-          let cookieData = {
-            jwtToken: loginResp?.user?.accessToken,
-          };
-
-          let userInfo = JSON.stringify({
-            username: saveUser?.data?.user?.username,
-          });
-
-          sessionStorage.setItem("user", userInfo);
-
-          let tempdata = JSON.stringify(cookieData);
-          cookies.set("user-info", tempdata, {
-            path: "/",
-          });
-
           setUsername(saveUser?.data?.user?.username);
-
           setLoginLoading(false);
         }
       } catch (error) {

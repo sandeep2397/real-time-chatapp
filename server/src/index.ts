@@ -1,3 +1,4 @@
+import MongoStore from 'connect-mongo';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -44,7 +45,7 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  //   credentials: true, // Enable credentials (cookies, authorization headers, etc.)
+  credentials: true, // Enable credentials (cookies, authorization headers, etc.)
 };
 
 // Use CORS middleware
@@ -56,7 +57,7 @@ const sessionMiddleware = session({
   secret: 'safe-chat-secret',
   resave: false,
   saveUninitialized: false,
-  //   store: MongoStore.create({ mongoUrl: mongoURL }) ,
+  store: MongoStore.create({ mongoUrl: mongoURL }),
   cookie: {
     maxAge: 60000000,
   },
