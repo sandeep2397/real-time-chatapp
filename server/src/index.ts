@@ -1,4 +1,4 @@
-import MongoStore from 'connect-mongo';
+import axios from 'axios';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -28,6 +28,8 @@ const getUserSessionData = (req: Request): UserSessionData | undefined => {
 };
 
 const app = express();
+axios.defaults.withCredentials = true;
+
 // List of allowed origins
 const allowedOrigins = [
   'http://localhost:4000',
@@ -39,11 +41,12 @@ const allowedOrigins = [
 const corsOptions = {
   origin: (origin: any, callback: any) => {
     // If no origin or origin is in the allowed list, allow the request
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // if (!origin || allowedOrigins.includes(origin)) {
+    //   callback(null, true);
+    // } else {
+    //   callback(new Error('Not allowed by CORS'));
+    // }
+    callback(null, true);
   },
   credentials: true, // Enable credentials (cookies, authorization headers, etc.)
 };
@@ -57,7 +60,7 @@ const sessionMiddleware = session({
   secret: 'safe-chat-secret',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: mongoURL }),
+  //   store: MongoStore.create({ mongoUrl: mongoURL }),
   cookie: {
     maxAge: 60000000,
   },
@@ -65,6 +68,7 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Middleware to catch CORS errors
 app.use((err: any, req: any, res: any, next: NextFunction) => {
