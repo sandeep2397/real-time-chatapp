@@ -88,7 +88,7 @@ app.get('/api/hello', (req: any, res: any) => {
 app.post('/api/login', async (req: Request, res: Response) => {
   const userId = req.body?.userId;
   const username = userId?.split('@')?.[0];
-
+  console.log('!!!! /login entered');
   const user = await User.findOne({ userId });
   req.session.userData = {
     username: username,
@@ -108,7 +108,9 @@ app.post('/api/login', async (req: Request, res: Response) => {
     const filteredContacts = contacts?.filter((contact: any) => contact.username !== username);
     const newUser = new User({ userId, username, contacts: filteredContacts, online: true, socketId: '' });
     try {
-      await newUser.save();
+      console.log('!!!!newUser Mongo');
+
+      //   await newUser.save();
       console.log('User Added successfully');
     } catch (err: any) {
       console.error('Failed to save user', err?.message);
@@ -274,6 +276,9 @@ mongoose
     console.log('Connected to MongoDB', mongoURL);
     const port = process.env.PORT || 4001;
     httpServer.listen(port, () => console.log(`Server running on port ${port}`));
+    // app.listen(port, () => {
+    //   console.log(`Server is running on port ${port}`);
+    // });
   })
   .catch((err) => {
     console.error('Error Connecting to mongo db url======>', mongoURL);
