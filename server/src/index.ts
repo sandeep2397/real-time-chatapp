@@ -28,7 +28,12 @@ const getUserSessionData = (req: Request): UserSessionData | undefined => {
 
 const app = express();
 // List of allowed origins
-const allowedOrigins = ['http://localhost:4000', 'https://ui-real-time-chatapp.vercel.app/'];
+const allowedOrigins = [
+  'http://localhost:4000',
+  'http://localhost:4001',
+  'http://localhost:4002',
+  'https://ui-real-time-chatapp.vercel.app',
+];
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
@@ -39,7 +44,7 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true, // Enable credentials (cookies, authorization headers, etc.)
+  //   credentials: true, // Enable credentials (cookies, authorization headers, etc.)
 };
 
 // Use CORS middleware
@@ -59,6 +64,16 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 app.use(express.json());
+
+// Middleware to catch CORS errors
+app.use((err: any, req: any, res: any, next: NextFunction) => {
+  if (err?.message?.includes('Not allowed by CORS')) {
+    // Custom response for CORS errors
+    res.status(403).json({ message: err.message });
+  } else {
+    next(err); // Pass to next middleware if it's not a CORS error
+  }
+});
 
 app.get('/api/hello', (req: any, res: any) => {
   res.json({ message: 'Hello from another endpoint!' });
