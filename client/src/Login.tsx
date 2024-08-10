@@ -80,7 +80,9 @@ const Login: FC<Props> = (props) => {
     if (username) {
       dispatch(currentSelectedPerson({}));
       const newSocket = io(socketEndpoint, {
-        // query: { username }, // Pass username in query params or through a connection event
+        query: {
+          username,
+        }, // Pass username in query params or through a connection event
         transports: ["websocket"],
         autoConnect: true,
         reconnectionAttempts: 5, // Number of reconnection attempts

@@ -152,11 +152,16 @@ function convertTo12HourFormat(gmtDateString: string) {
   return `${date.toDateString()} ${timeString} GMT`;
 }
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('User connected:', socket.id);
   const req = socket.request as any;
+
+  const socketusername: any = socket?.handshake?.query?.username;
+  console.log('socketusername:', socketusername);
+
   const userData = getUserSessionData(req);
   console.log('User session Data:', userData);
+  const bindUserName = userData?.username ?? socketusername;
 
   socket.on('join', async (userId: string) => {
     const username = userId?.split('@')?.[0];
@@ -164,7 +169,7 @@ io.on('connection', (socket) => {
 
     const loadContacts = async () => {
       try {
-        const dbUser: any = await User.findOne({ username: userData?.username });
+        const dbUser: any = await User.findOne({ username: bindUserName });
         console.log(`${dbUser?.contacts?.length ?? 0} contacts exists for user ${username} loaded========>`);
         socket.emit('loadcontacts', dbUser?.contacts || []);
       } catch (err) {
@@ -172,7 +177,7 @@ io.on('connection', (socket) => {
       }
     };
 
-    if (userData?.username) {
+    if (bindUserName) {
       loadContacts();
       //   loadMessages();
     }
@@ -190,11 +195,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('new-user-chat', ({ sender, recipient }: any) => {
-    const username = userData?.username;
+    const username = bindUserName;
     const loadMessages = async () => {
       try {
         const sessionUsername = req.session.username;
-        const chats: any = await Chat.find({ participants: { $all: [userData?.username, recipient] } })
+        const chats: any = await Chat.find({ participants: { $all: [bindUserName, recipient] } })
           .sort({ timeStamp: 1 })
           .exec();
 
@@ -206,13 +211,13 @@ io.on('connection', (socket) => {
         console.log(err);
       }
     };
-    if (userData?.username) {
+    if (bindUserName) {
       loadMessages();
     }
   });
 
   socket.on('send_message', async ({ content, recipient }: { content: string; recipient: string }) => {
-    const sessionUsername = userData?.username;
+    const sessionUsername = bindUserName;
     console.log('new message from send_message:' + recipient + 'to ' + sessionUsername);
     if (!sessionUsername) return;
 
@@ -248,10 +253,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('User disconnected:', userData?.username);
+    console.log('User disconnected:', bindUserName);
     console.log('reason:', reason);
-    if (userData?.username) {
-      User.findOneAndUpdate({ username: userData?.username }, { online: false });
+    if (bindUserName) {
+      User.findOneAndUpdate({ username: bindUserName }, { online: false });
     }
   });
 });
