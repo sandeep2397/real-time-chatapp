@@ -1,4 +1,3 @@
-import MongoStore from 'connect-mongo';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -52,7 +51,7 @@ const sessionMiddleware = session({
   secret: 'safe-chat-secret',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: mongoURL }),
+  //   store: MongoStore.create({ mongoUrl: mongoURL }) ,
   cookie: {
     maxAge: 60000000,
   },
