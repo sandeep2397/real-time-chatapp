@@ -276,7 +276,8 @@ mongoose
     httpServer.listen(port, () => console.log(`Server running on port ${port}`));
   })
   .catch((err) => {
-    console.error('Error Connecting to mongo db======>', err?.message);
+    console.error('Error Connecting to mongo db url======>', mongoURL);
+    console.error('Error Connecting to mongo db======>', err);
   });
 
 export default app;
