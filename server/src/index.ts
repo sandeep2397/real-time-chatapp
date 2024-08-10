@@ -1,5 +1,4 @@
 import axios from 'axios';
-import MongoStore from 'connect-mongo';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -29,45 +28,35 @@ const getUserSessionData = (req: Request): UserSessionData | undefined => {
 };
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+const mongoURL = 'mongodb+srv://sandeepgp2397:F02DvPQxzowJujJY@cluster0.nku9qrs.mongodb.net/Chat';
+const memoryStore = new session.MemoryStore();
+
+const sessionMiddleware = session({
+  secret: 'safe-chat-secret',
+  resave: false,
+  saveUninitialized: false,
+  store: memoryStore,
+  cookie: {
+    maxAge: 60000000,
+  },
+});
+
+app.use(sessionMiddleware);
 axios.defaults.withCredentials = true;
 
 // List of allowed origins
 const allowedOrigins = ['http://localhost:4000', 'https://ui-real-time-chatapp.vercel.app'];
 
 const corsOptions = {
-  origin: (origin: any, callback: any) => {
-    // If no origin or origin is in the allowed list, allow the request
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: ['http://localhost:4000', 'https://ui-real-time-chatapp.vercel.app'],
   credentials: true, // Enable credentials (cookies, authorization headers, etc.)
 };
 
 // Use CORS middleware
 app.use(cors(corsOptions));
-
-const mongoURL = 'mongodb+srv://sandeepgp2397:F02DvPQxzowJujJY@cluster0.nku9qrs.mongodb.net/Chat';
-
-const sessionMiddleware = session({
-  secret: 'safe-chat-secret',
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: mongoURL }),
-
-  cookie: {
-    maxAge: 60000000,
-    secure: true,
-    sameSite: true,
-    httpOnly: true,
-  },
-});
-
-app.use(sessionMiddleware);
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 // Middleware to catch CORS errors
 app.use((err: any, req: any, res: any, next: NextFunction) => {
