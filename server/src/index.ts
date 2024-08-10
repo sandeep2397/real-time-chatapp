@@ -27,7 +27,23 @@ export const getUserSessionData = (req: Request): UserSessionData | undefined =>
 };
 
 const app = express();
-app.use(cors());
+// List of allowed origins
+const allowedOrigins = ['http://localhost:4000', 'https://ui-real-time-chatapp.vercel.app/'];
+
+const corsOptions = {
+  origin: (origin: any, callback: any) => {
+    // If no origin or origin is in the allowed list, allow the request
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Enable credentials (cookies, authorization headers, etc.)
+};
+
+// Use CORS middleware
+app.use(cors(corsOptions));
 
 const mongoURL = process.env.MONGO_URL ?? '';
 
