@@ -60,8 +60,20 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 app.use(express.json());
 
+app.use('/', (req: any, res: any) => {
+  res.status(200).send({ message: 'Hello, Server is up and running!' });
+});
+
+app.get('/api/hello', (req: any, res: any) => {
+  res.status(200).send({ message: 'Hello, Server is up and running!' });
+});
+
+app.get('/api', (req: any, res: any) => {
+  res.status(200).send({ message: 'Hello, Server is up and running!' });
+});
+
 // HTTP route for login
-app.post('/login', async (req: Request, res: Response) => {
+app.post('/api/login', async (req: Request, res: Response) => {
   const userId = req.body?.userId;
   const username = userId?.split('@')?.[0];
 
@@ -76,14 +88,6 @@ app.post('/login', async (req: Request, res: Response) => {
     } else {
       console.log(`Error saving session: ${err}`);
     }
-  });
-
-  app.use('/', (req: any, res: any) => {
-    res.status(200).send({ message: 'Hello, Server is up and running!' });
-  });
-
-  app.get('/api/hello', (req: any, res: any) => {
-    res.json({ message: 'Login Hello from another endpoint!' });
   });
 
   if (user) {
