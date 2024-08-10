@@ -70,7 +70,7 @@ app.post('/login', async (req: Request, res: Response) => {
     res.json({ status: 200, msg: 'Logged in successfully', user });
   } else {
     const filteredContacts = contacts?.filter((contact: any) => contact.username !== username);
-    const newUser = new User({ userId, username, contacts: filteredContacts, online: true });
+    const newUser = new User({ userId, username, contacts: filteredContacts, online: true, socketId: '' });
     try {
       await newUser.save();
       console.log('User Added successfully');
@@ -125,7 +125,7 @@ io.on('connection', (socket) => {
   const userData = getUserSessionData(req);
   console.log('User session Data:', userData);
 
-  socket.on('join', (userId: string) => {
+  socket.on('join', async (userId: string) => {
     const username = userId?.split('@')?.[0];
     socket.join(username);
 
@@ -143,15 +143,16 @@ io.on('connection', (socket) => {
       loadContacts();
       //   loadMessages();
     }
-    // req.session.save((err: any) => {
-    //   if (!err) {
-    //     console.log('Session saved successfully', req.session);
-    //   } else {
-    //     console.log(`Error saving session: ${err}`);
-    //   }
-    // });
     if (username) {
-      User.findOneAndUpdate({ username: username }, { online: true });
+      const res = await User.updateOne(
+        { username: username },
+        {
+          $set: {
+            socketId: socket.id,
+          },
+        }
+      );
+      //   console.log('user updated', res);
     }
   });
 
@@ -164,7 +165,9 @@ io.on('connection', (socket) => {
           .sort({ timeStamp: 1 })
           .exec();
 
-        console.log(`${chats[0]?.messages?.length ?? 0} messages for user ${username} loaded========>`);
+        console.log(
+          `${chats[0]?.messages?.length ?? 0} messages shared between  ${recipient} and ${username} ========>`
+        );
         socket.emit('loadmessages', chats[0]?.messages || []);
       } catch (err) {
         console.log(err);
@@ -179,6 +182,9 @@ io.on('connection', (socket) => {
     const sessionUsername = userData?.username;
     console.log('new message from send_message:' + recipient + 'to ' + sessionUsername);
     if (!sessionUsername) return;
+
+    const userList: any = (await User.find({ username: { $in: [recipient, sessionUsername] } })) || [];
+    const userSocketIDs = userList?.map((user: any) => user?.socketId);
 
     const chat = await Chat.findOne({ participants: { $all: [sessionUsername, recipient] } });
     if (!chat) {
@@ -205,7 +211,7 @@ io.on('connection', (socket) => {
         messages: newMsgs,
       });
     }
-    io.to(recipient).emit('new_message', { sender: sessionUsername, content });
+    io.to(userSocketIDs).emit('new_message', { sender: sessionUsername, recipient, content });
   });
 
   socket.on('disconnect', (reason) => {

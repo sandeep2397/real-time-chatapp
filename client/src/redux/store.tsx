@@ -1,17 +1,21 @@
-import { createBrowserHistory } from 'history';
-import { applyMiddleware, compose, createStore } from 'redux';
-import { persistReducer, persistStore } from 'redux-persist';
-import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
-import createSagaMiddleware from 'redux-saga';
-import rootReducer from './root_reducers';
-import sagas from './root_sagas';
+/*
+©2022 Pivotree | All rights reserved
+*/
+import { createBrowserHistory } from "history";
+import { applyMiddleware, compose, createStore } from "redux";
+import logger from "redux-logger";
+import { persistReducer, persistStore } from "redux-persist";
+import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
+import createSagaMiddleware from "redux-saga";
+import rootReducer from "./root_reducers";
+import sagas from "./root_sagas";
 
 //middlewares
 export const history = createBrowserHistory();
 const sagaMiddleware = createSagaMiddleware();
 const middlewares = [sagaMiddleware];
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage,
 };
 export let persitstore: any;
@@ -27,7 +31,7 @@ export function configStore(initialState: object) {
   store = createStore(
     persistedReducer,
     {},
-    composeEnhancers(applyMiddleware(...middlewares))
+    composeEnhancers(applyMiddleware(...middlewares, logger))
   );
 
   sagaMiddleware.run(sagas, {});

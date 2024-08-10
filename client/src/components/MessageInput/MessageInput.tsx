@@ -38,6 +38,7 @@ const MessageInput: FC<props> = ({ sendMessage }: props) => {
         disabled={message === ""}
         onClick={() => {
           setMessage("");
+          sendMessage(message);
         }}
       >
         <SendIcon />

@@ -41,15 +41,19 @@ const ContactItem: React.FC<ContactItemProps> = ({
           });
         }
 
-        dispatch(
-          currentSelectedPerson({
-            preferedName,
-            username,
-            lastMessage,
-            timestamp,
-            avatar,
-          })
+        const userObj = {
+          preferedName,
+          username,
+          lastMessage,
+          timestamp,
+          avatar,
+        };
+
+        sessionStorage.setItem(
+          "current-selected-user",
+          JSON.stringify(userObj)
         );
+        dispatch(currentSelectedPerson(userObj));
       }}
     >
       <ListItemAvatar>

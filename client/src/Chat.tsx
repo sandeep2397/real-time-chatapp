@@ -6,11 +6,13 @@ import ChatWindow from "./components/ChatWindow/ChatWindow";
 import Header from "./components/Header/Header";
 import MessageInput from "./components/MessageInput/MessageInput";
 import Sidebar from "./components/Sidebar/Sidebar";
+import { useGetUserName } from "./hooks/customHook";
+import { currentSelectedPerson } from "./redux/root_actions";
 // const socket = io("http://localhost:4001");
 
 const Chat: React.FC = () => {
   const dispatch = useDispatch();
-  const [message, setMessage] = useState("");
+  const authUserName = useGetUserName();
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
   //   const [socket, setSocket] = useState<any>(null);
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
@@ -34,9 +36,22 @@ const Chat: React.FC = () => {
       // Listen for new messages
       socket.on("new_message", (msgData: any) => {
         console.log("Mesgss====>", msgData);
-        let newMsg = [msgData];
-        // setMessages([...messages, ...newMsg]);
-        setMessages((prevMessages) => [...prevMessages, msgData]);
+
+        const currentSelUserStr = sessionStorage.getItem(
+          "current-selected-user"
+        );
+        const currSelUserObj =
+          currentSelUserStr && currentSelUserStr !== "undefined"
+            ? JSON.parse(currentSelUserStr)
+            : {};
+        if (
+          msgData?.sender === currSelUserObj?.username ||
+          msgData?.recipient === currSelUserObj?.username
+        ) {
+          let newMsg = [msgData];
+          // setMessages([...messages, ...newMsg]);
+          setMessages((prevMessages) => [...prevMessages, msgData]);
+        }
       });
     }
 
@@ -108,6 +123,7 @@ const Chat: React.FC = () => {
                     content: receivedMsg,
                     recipient: selectedUser?.username,
                   });
+                  dispatch(currentSelectedPerson(selectedUser));
                 }
               }
             }}
