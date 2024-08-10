@@ -1,4 +1,5 @@
 import axios from 'axios';
+import MongoStore from 'connect-mongo';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -31,22 +32,16 @@ const app = express();
 axios.defaults.withCredentials = true;
 
 // List of allowed origins
-const allowedOrigins = [
-  'http://localhost:4000',
-  'http://localhost:4001',
-  'http://localhost:4002',
-  'https://ui-real-time-chatapp.vercel.app',
-];
+const allowedOrigins = ['http://localhost:4000', 'https://ui-real-time-chatapp.vercel.app'];
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
     // If no origin or origin is in the allowed list, allow the request
-    // if (!origin || allowedOrigins.includes(origin)) {
-    //   callback(null, true);
-    // } else {
-    //   callback(new Error('Not allowed by CORS'));
-    // }
-    callback(null, true);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   credentials: true, // Enable credentials (cookies, authorization headers, etc.)
 };
@@ -60,7 +55,7 @@ const sessionMiddleware = session({
   secret: 'safe-chat-secret',
   resave: false,
   saveUninitialized: false,
-  //   store: MongoStore.create({ mongoUrl: mongoURL }),
+  store: MongoStore.create({ mongoUrl: mongoURL }),
   cookie: {
     maxAge: 60000000,
   },
@@ -131,7 +126,7 @@ const io = new Server(httpServer, {
   pingTimeout: 60000000, // Increase timeout if needed (in milliseconds)
   pingInterval: 25000000, // Adjust ping interval (in milliseconds)
   cors: {
-    origin: ['http://localhost:4000', 'https://real-time-chatapp-sigma.vercel.app'],
+    origin: ['http://localhost:4000', 'https://ui-real-time-chatapp.vercel.app'],
     methods: ['GET', 'POST'],
     credentials: true, // Allow cookies to be sent
   },
@@ -277,15 +272,13 @@ mongoose
   })
   .then(() => {
     console.log('Connected to MongoDB', mongoURL);
-    const port = process.env.PORT || 4001;
-    httpServer.listen(port, () => console.log(`Server running on port ${port}`));
-    // app.listen(port, () => {
-    //   console.log(`Server is running on port ${port}`);
-    // });
   })
   .catch((err) => {
     console.error('Error Connecting to mongo db url======>', mongoURL);
     console.error('Error Connecting to mongo db======>', err);
   });
+
+const port = process.env.PORT || 4001;
+httpServer.listen(port, () => console.log(`Server running on port ${port}`));
 
 export default app;

@@ -68,7 +68,7 @@
     }
   },
   "scripts": {
-    "start": "node --loader ts-node/esm ./src/index.ts",
+    "start": "set PORT=4001&& node --loader ts-node/esm ./src/index.ts",
     "build": "echo 'No build step required'",
     "server": "node ./dist-server/bin/www.js --trace-warnings",
     "dev": "set PORT=4001 NODE_ENV=development npm-run-all start",
