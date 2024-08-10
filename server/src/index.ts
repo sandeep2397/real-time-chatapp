@@ -60,16 +60,8 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 app.use(express.json());
 
-app.use('/', (req: any, res: any) => {
-  res.status(200).send({ message: 'Hello, Server is up and running!' });
-});
-
 app.get('/api/hello', (req: any, res: any) => {
-  res.status(200).send({ message: 'Hello, Server is up and running!' });
-});
-
-app.get('/api', (req: any, res: any) => {
-  res.status(200).send({ message: 'Hello, Server is up and running!' });
+  res.json({ message: 'Hello from another endpoint!' });
 });
 
 // HTTP route for login
@@ -103,6 +95,10 @@ app.post('/api/login', async (req: Request, res: Response) => {
     }
     res.json({ status: 200, msg: 'Logged in successfully', user: newUser });
   }
+});
+
+app.use('/', (req: any, res: any) => {
+  res.status(200).send({ message: 'Empty route Server is up and running!' });
 });
 
 const httpServer = createServer(app);
