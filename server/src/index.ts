@@ -1,3 +1,4 @@
+import MongoStore from 'connect-mongo';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -11,7 +12,7 @@ import contacts from './stubbedContacts.js';
 
 dotenv.config();
 
-export interface UserSessionData {
+interface UserSessionData {
   username: string;
   userId: string;
 }
@@ -22,7 +23,7 @@ declare module 'express-session' {
   }
 }
 
-export const getUserSessionData = (req: Request): UserSessionData | undefined => {
+const getUserSessionData = (req: Request): UserSessionData | undefined => {
   return req.session.userData;
 };
 
@@ -47,15 +48,11 @@ app.use(cors(corsOptions));
 
 const mongoURL = process.env.MONGO_URL ?? '';
 
-mongoose.connect(mongoURL, {}).then(() => {
-  console.log('Connected to MongoDB:', mongoURL);
-});
-
 const sessionMiddleware = session({
-  secret: 'your-secret-key',
+  secret: 'safe-chat-secret',
   resave: false,
   saveUninitialized: false,
-  store: new session.MemoryStore(),
+  store: MongoStore.create({ mongoUrl: mongoURL }),
   cookie: {
     maxAge: 60000000,
   },
@@ -80,6 +77,14 @@ app.post('/login', async (req: Request, res: Response) => {
     } else {
       console.log(`Error saving session: ${err}`);
     }
+  });
+
+  app.use('/', (req: any, res: any) => {
+    res.status(200).send({ message: 'Hello, Server is up and running!' });
+  });
+
+  app.get('/api/hello', (req: any, res: any) => {
+    res.json({ message: 'Login Hello from another endpoint!' });
   });
 
   if (user) {
@@ -239,5 +244,20 @@ io.on('connection', (socket) => {
   });
 });
 
-const port = process.env.PORT || 4001;
-httpServer.listen(port, () => console.log(`Server running on port ${port}`));
+// Start the server
+
+mongoose
+  .connect(mongoURL, {
+    serverSelectionTimeoutMS: 30000, // 30 seconds
+    socketTimeoutMS: 45000, // 45 seconds
+  })
+  .then(() => {
+    console.log('Connected to MongoDB', mongoURL);
+    const port = process.env.PORT || 4001;
+    httpServer.listen(port, () => console.log(`Server running on port ${port}`));
+  })
+  .catch((err) => {
+    console.error('Error Connecting to mongo db======>', err?.message);
+  });
+
+export default app;
