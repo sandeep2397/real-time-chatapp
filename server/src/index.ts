@@ -54,7 +54,7 @@ const corsOptions = {
 // Use CORS middleware
 app.use(cors(corsOptions));
 
-const mongoURL = process.env.MONGO_URL ?? '';
+const mongoURL = 'mongodb+srv://sandeepgp2397:F02DvPQxzowJujJY@cluster0.nku9qrs.mongodb.net/Chat';
 
 const sessionMiddleware = session({
   secret: 'safe-chat-secret',
