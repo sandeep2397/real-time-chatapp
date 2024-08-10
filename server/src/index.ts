@@ -56,8 +56,12 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: mongoURL }),
+
   cookie: {
     maxAge: 60000000,
+    secure: true,
+    sameSite: true,
+    httpOnly: true,
   },
 });
 
