@@ -174,29 +174,54 @@ io.use((socket, next) => {
   sessionMiddleware(req, res, next as NextFunction);
 });
 
-function convertTo12HourFormat(gmtDateString: string) {
+function convertTo12HourFormat() {
   // Parse the GMT date string into a Date object
-  const date = new Date(gmtDateString);
+  //   const date = new Date(gmtDateString);
 
-  // Extract components
-  const options: any = {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-    timeZone: 'GMT',
+  //   // Extract components
+  //   const options: any = {
+  //     hour: '2-digit',
+  //     minute: '2-digit',
+  //     second: '2-digit',
+  //     hour12: true,
+  //     timeZone: 'GMT',
+  //   };
+
+  //   // Convert to 12-hour format
+  //   const timeString = date.toLocaleTimeString('en-US', options);
+  const date = new Date();
+  const dateOptions = {
+    month: 'long', // Full month name (e.g., 'August')
+    day: 'numeric', // Numeric day (e.g., '10')
+    year: 'numeric', // Full year (e.g., '2024')
   };
 
-  // Convert to 12-hour format
-  const timeString = date.toLocaleTimeString('en-US', options);
+  const timeOptions = {
+    hour: 'numeric', // Numeric hour (e.g., '1')
+    minute: 'numeric', // Numeric minute (e.g., '05')
+    second: 'numeric', // Numeric second (e.g., '30')
+    hour12: true, // 12-hour format with AM/PM
+  };
+
+  // Format date and time separately
+  const formattedDate = date.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    hour12: true,
+    minute: 'numeric',
+  });
+  console.log(formattedDate);
 
   // Format the final string
-  return `${date.toDateString()} ${timeString} GMT`;
+  return formattedDate;
 }
 
 io.on('connection', async (socket) => {
   console.log('User connected:', socket.id);
   const req = socket.request as any;
+  let disconnectTimeout: any;
 
   const socketusername: any = socket?.handshake?.query?.username;
   console.log('socketusername:', socketusername);
@@ -267,9 +292,10 @@ io.on('connection', async (socket) => {
     const userSocketIDs = userList?.map((user: any) => user?.socketId);
 
     const chat = await Chat.findOne({ participants: { $all: [sessionUsername, recipient] } });
+    const gmtDateString = new Date().toDateString();
+    const convertedDateString = convertTo12HourFormat();
+
     if (!chat) {
-      const gmtDateString = new Date().toDateString();
-      const convertedDateString = convertTo12HourFormat(gmtDateString);
       const msgObj: IMessages = {
         sender: sessionUsername,
         content,
@@ -283,23 +309,35 @@ io.on('connection', async (socket) => {
       await newChat.save();
     } else {
       const oldMsgs: any = chat.messages || [];
-      const gmtDateString = new Date().toDateString();
-      const convertedDateString = convertTo12HourFormat(gmtDateString);
+
       let newMsgs =
         [...oldMsgs, { sender: sessionUsername, content, timestamp: convertedDateString, type: 'text' }] || [];
       await chat.updateOne({
         messages: newMsgs,
       });
     }
-    io.to(userSocketIDs).emit('new_message', { sender: sessionUsername, recipient, content });
+    io.to(userSocketIDs).emit('new_message', {
+      sender: sessionUsername,
+      timestamp: convertedDateString,
+      recipient,
+      content,
+    });
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('User disconnected:', bindUserName);
-    console.log('reason:', reason);
-    if (bindUserName) {
-      User.findOneAndUpdate({ username: bindUserName }, { online: false });
-    }
+    disconnectTimeout = setTimeout(() => {
+      console.log('User disconnected:', bindUserName);
+      console.log('reason:', reason);
+      if (bindUserName) {
+        User.findOneAndUpdate({ username: bindUserName }, { online: false });
+      }
+    }, 5000); // Delay for 5 seconds
+  });
+
+  socket.on('reconnect', () => {
+    clearTimeout(disconnectTimeout);
+    console.log('User reconnected:', socket.id);
+    // Handle reconnection logic
   });
 });
 

@@ -1,13 +1,14 @@
 import { Box, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { SocketContext } from "./App";
 import "./App.css";
 import ChatWindow from "./components/ChatWindow/ChatWindow";
 import Header from "./components/Header/Header";
 import MessageInput from "./components/MessageInput/MessageInput";
 import Sidebar from "./components/Sidebar/Sidebar";
 import { useGetUserName } from "./hooks/customHook";
-import { currentSelectedPerson } from "./redux/root_actions";
+import { currentSelectedPerson, saveContacts } from "./redux/root_actions";
 // const socket = io("http://localhost:4001");
 
 const Chat: React.FC = () => {
@@ -16,8 +17,14 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
   //   const [socket, setSocket] = useState<any>(null);
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
-  const socket = useSelector((state: any) => state?.Common?.socket);
+  //   const socket = useSelector((state: any) => state?.Common?.socket);
   //   sessionStorage.getItem("socket");
+  const socket = useContext(SocketContext);
+  const currentSelUserStr = sessionStorage.getItem("current-selected-user");
+  const currSelUserObj =
+    currentSelUserStr && currentSelUserStr !== "undefined"
+      ? JSON.parse(currentSelUserStr)
+      : {};
 
   useEffect(() => {
     // Initialize Socket.io connection
@@ -29,6 +36,10 @@ const Chat: React.FC = () => {
         : null;
 
     if (socket) {
+      //   socket.on("loadcontacts", (contacts: any) => {
+      //     dispatch(saveContacts(contacts));
+      //   });
+
       socket.on("loadmessages", (msgData: any) => {
         setMessages(msgData);
       });
@@ -36,7 +47,6 @@ const Chat: React.FC = () => {
       // Listen for new messages
       socket.on("new_message", (msgData: any) => {
         console.log("Mesgss====>", msgData);
-
         const currentSelUserStr = sessionStorage.getItem(
           "current-selected-user"
         );
@@ -53,10 +63,22 @@ const Chat: React.FC = () => {
           setMessages((prevMessages) => [...prevMessages, msgData]);
         }
       });
+
+      socket.on("reconnect", (attempt: any) => {
+        console.log("Reconnected after", attempt, "attempts");
+        // Logic for when the socket reconnects
+      });
+
+      socket.on("disconnect", (reason: any) => {
+        console.log("Disconnected:", reason);
+        // Logic for when the socket disconnects
+      });
     }
 
     // Clean up the socket connection when the component unmounts
     return () => {
+      dispatch(saveContacts([]));
+
       socket && socket.off("loadmessages");
       socket && socket.off("new_message");
       socket && socket.off("loadcontacts");
@@ -83,7 +105,7 @@ const Chat: React.FC = () => {
       <Box display="flex" height="90vh">
         <Sidebar />
         <Box display="flex" flexDirection="column" flexGrow={1}>
-          {selectedUser?.username ? (
+          {currSelUserObj?.username ? (
             <>
               <Header />
               <ChatWindow messages={messages} />

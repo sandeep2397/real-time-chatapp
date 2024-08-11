@@ -13,7 +13,7 @@ import {
   useTheme,
 } from "@mui/material";
 import axios from "axios";
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useState } from "react";
 import { Cookies } from "react-cookie";
 import { FaEye, FaEyeSlash, FaLock, FaUser } from "react-icons/fa";
 import { MdLogin } from "react-icons/md";
@@ -29,16 +29,11 @@ import {
 // import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ConfirmationResult, signInWithEmailAndPassword } from "firebase/auth";
 import { useDispatch } from "react-redux";
-import io from "socket.io-client";
 import { customAuth } from "./firebaseConfig";
-import {
-  currentSelectedPerson,
-  saveContacts,
-  saveSocket,
-} from "./redux/root_actions";
 
 interface Props {
   children?: null;
+  establishSocketConnection: (userId: string) => void;
 }
 
 // const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
@@ -71,62 +66,69 @@ const Login: FC<Props> = (props) => {
   });
 
   // useEffect(() => {
-  //   return () => {
-  //     socket.off("join");
-  //   };
-  // }, []);
+  //   if (username) {
+  //     dispatch(currentSelectedPerson({}));
+  //     const newSocket = io(socketEndpoint, {
+  //       query: {
+  //         username,
+  //       }, // Pass username in query params or through a connection event
+  //       transports: ["websocket"],
+  //       autoConnect: true,
+  //       reconnection: true, // Enable reconnection
+  //       reconnectionAttempts: 5, // Number of reconnection attempts before giving up
+  //       reconnectionDelay: 1000, // Time between reconnection attempts
+  //       reconnectionDelayMax: 5000, // Maximum time delay between reconnection attempts
+  //       timeout: 20000, // Timeout before the connection is considered lost
+  //     });
 
-  useEffect(() => {
-    if (username) {
-      dispatch(currentSelectedPerson({}));
-      const newSocket = io(socketEndpoint, {
-        query: {
-          username,
-        }, // Pass username in query params or through a connection event
-        transports: ["websocket"],
-        autoConnect: true,
-        reconnectionAttempts: 5, // Number of reconnection attempts
-        reconnectionDelay: 1000, // Time between reconnection attempts (ms)
-      });
+  //     // Handle connection events
+  //     newSocket.on("connect", () => {
+  //       console.log("Connected to server");
+  //       // let newSocketStr = JSON.stringify({
+  //       //   socket: newSocket,
+  //       // });
+  //       // sessionStorage.setItem("socket", newSocketStr);
+  //       // let cookieData = {
+  //       //   jwtToken: loginResp?.user?.accessToken,
+  //       // };
 
-      // Handle connection events
-      newSocket.on("connect", () => {
-        console.log("Connected to server");
-        // let newSocketStr = JSON.stringify({
-        //   socket: newSocket,
-        // });
-        // sessionStorage.setItem("socket", newSocketStr);
-        // let cookieData = {
-        //   jwtToken: loginResp?.user?.accessToken,
-        // };
+  //       let userInfo = JSON.stringify({
+  //         username: username,
+  //       });
 
-        let userInfo = JSON.stringify({
-          username: username,
-        });
+  //       sessionStorage.setItem("user", userInfo);
 
-        sessionStorage.setItem("user", userInfo);
+  //       // let tempdata = JSON.stringify(cookieData);
+  //       // cookies.set("user-info", tempdata, {
+  //       //   path: "/",
+  //       // });
+  //       dispatch(saveSocket(newSocket));
+  //       newSocket.emit("join", username); // Emit a join event with the username
+  //     });
 
-        // let tempdata = JSON.stringify(cookieData);
-        // cookies.set("user-info", tempdata, {
-        //   path: "/",
-        // });
-        dispatch(saveSocket(newSocket));
-        newSocket.emit("join", username); // Emit a join event with the username
-      });
+  //     newSocket.on("loadcontacts", (contacts: any) => {
+  //       dispatch(saveContacts(contacts));
+  //       navigate("/home");
+  //     });
 
-      newSocket.on("loadcontacts", (contacts: any) => {
-        dispatch(saveContacts(contacts));
-        navigate("/home");
-      });
+  //     newSocket.on("reconnect", (attempt) => {
+  //       console.log("Reconnected after", attempt, "attempts");
+  //       // Logic for when the socket reconnects
+  //     });
 
-      // Cleanup on component unmount
-      return () => {
-        newSocket.off("join");
-        newSocket.off("loadmessages");
-        newSocket && newSocket.off("loadcontacts");
-      };
-    }
-  }, [username]);
+  //     newSocket.on("disconnect", (reason) => {
+  //       console.log("Disconnected:", reason);
+  //       // Logic for when the socket disconnects
+  //     });
+
+  //     // Cleanup on component unmount
+  //     return () => {
+  //       newSocket.off("join");
+  //       newSocket.off("loadmessages");
+  //       newSocket && newSocket.off("loadcontacts");
+  //     };
+  //   }
+  // }, [username]);
 
   const handleMouseDownPassword = (
     event: React.MouseEvent<HTMLButtonElement>
@@ -177,6 +179,8 @@ const Login: FC<Props> = (props) => {
         );
 
         if (saveUser) {
+          props.establishSocketConnection &&
+            props.establishSocketConnection(saveUser?.data?.user?.username);
           setUsername(saveUser?.data?.user?.username);
           setLoginLoading(false);
         }

@@ -17,4 +17,5 @@ export const removeSession = () => {
   // });
 
   sessionStorage.removeItem("user");
+  sessionStorage.removeItem("current-selected-user");
 };

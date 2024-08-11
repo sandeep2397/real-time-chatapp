@@ -1,6 +1,7 @@
 import { css, Global } from "@emotion/react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { FC, Suspense, useEffect, useState } from "react";
+import React, { FC, Suspense, useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   Route,
   Routes,
@@ -8,9 +9,11 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
 import ErrorBoundary from "./Errorboundary";
 import { LoginRoute } from "./LoginRoute";
 import { PrivateRoute } from "./PrivateRoute";
+import { saveContacts } from "./redux/root_actions";
 import { routes } from "./routes";
 import { isUserAuthenticated } from "./utils/auth";
 interface Props {
@@ -19,13 +22,18 @@ interface Props {
 }
 
 const loading = () => <div></div>;
+export const SocketContext = React.createContext<Socket | null>(null);
 
 const App: FC<Props> = (props: Props) => {
   const location = useLocation();
   const navigate = useNavigate();
   // const match = useMatch();
   const params: any = useParams();
-  const [pressed, setPressed] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+
+  // const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
+  const socketEndpoint = "http://localhost:4001"; // Your server's URL
+  const dispatch = useDispatch();
 
   useEffect(() => {
     window.onpopstate = (e) => {
@@ -92,7 +100,45 @@ const App: FC<Props> = (props: Props) => {
     };
   }, []);
 
-  let crumbs: any = [];
+  // useEffect(() => {
+  //   return () => {
+  //     socket?.off("loadcontacts");
+  //   };
+  // }, []);
+
+  const establishSocketConnection = (username: string) => {
+    const newSocket = io(socketEndpoint, {
+      query: {
+        username,
+      }, // Pass username in query params or through a connection event
+      transports: ["websocket"],
+      autoConnect: true,
+      reconnection: true, // Enable reconnection
+      reconnectionAttempts: 5, // Number of reconnection attempts before giving up
+      reconnectionDelay: 1000, // Time between reconnection attempts
+      reconnectionDelayMax: 5000, // Maximum time delay between reconnection attempts
+      timeout: 20000, // Timeout before the connection is considered lost
+    });
+    // Handle connection events
+    newSocket.on("connect", () => {
+      console.log("Connected to server");
+      let userInfo = JSON.stringify({
+        username: username,
+      });
+
+      sessionStorage.setItem("user", userInfo);
+      navigate("/home");
+
+      // dispatch(saveSocket(newSocket));
+      newSocket.emit("join", username); // Emit a join event with the username
+    });
+    newSocket.on("loadcontacts", (contacts: any) => {
+      dispatch(saveContacts(contacts));
+    });
+
+    setSocket(newSocket);
+  };
+
   return (
     <ThemeProvider theme={gettheme()}>
       <ErrorBoundary>
@@ -121,21 +167,29 @@ const App: FC<Props> = (props: Props) => {
               <Route
                 path={path}
                 element={
-                  path === "/login" ? (
-                    <LoginRoute>
-                      {/* <SocketProvider> */}
-                      <Suspense fallback={loading()}>
-                        <route.component {...props} name={name} />
-                      </Suspense>
-                      {/* </SocketProvider> */}
-                    </LoginRoute>
-                  ) : (
-                    <PrivateRoute>
-                      <Suspense fallback={loading()}>
-                        <route.component {...props} name={name} />
-                      </Suspense>
-                    </PrivateRoute>
-                  )
+                  <SocketContext.Provider value={socket}>
+                    {path === "/login" ? (
+                      <LoginRoute>
+                        {/* <SocketProvider> */}
+                        <Suspense fallback={loading()}>
+                          <route.component
+                            {...props}
+                            name={name}
+                            establishSocketConnection={
+                              establishSocketConnection
+                            }
+                          />
+                        </Suspense>
+                        {/* </SocketProvider> */}
+                      </LoginRoute>
+                    ) : (
+                      <PrivateRoute>
+                        <Suspense fallback={loading()}>
+                          <route.component {...props} name={name} />
+                        </Suspense>
+                      </PrivateRoute>
+                    )}
+                  </SocketContext.Provider>
                 }
               />
             );

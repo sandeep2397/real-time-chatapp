@@ -1,7 +1,8 @@
 import { Avatar, ListItemAvatar, ListItemText } from "@mui/material";
 import { teal } from "@mui/material/colors";
-import React from "react";
+import React, { useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { SocketContext } from "../../App";
 import { useGetUserName } from "../../hooks/customHook";
 import { currentSelectedPerson } from "../../redux/root_actions";
 import { ContactItemContainer, Timestamp } from "./Sidebar.styles";
@@ -25,8 +26,15 @@ const ContactItem: React.FC<ContactItemProps> = ({
   const authUserName = useGetUserName();
   const userRegex = /^\d+$/;
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
-  const shouldHighlight = selectedUser?.username === username;
-  const socket = useSelector((state: any) => state?.Common?.socket);
+  const currentSelUserStr = sessionStorage.getItem("current-selected-user");
+  const currSelUserObj =
+    currentSelUserStr && currentSelUserStr !== "undefined"
+      ? JSON.parse(currentSelUserStr)
+      : {};
+
+  const shouldHighlight = currSelUserObj?.username === username;
+  // const socket = useSelector((state: any) => state?.Common?.socket);
+  const socket = useContext(SocketContext);
 
   return (
     <ContactItemContainer

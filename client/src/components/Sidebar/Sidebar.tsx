@@ -9,10 +9,11 @@ import {
 } from "@mui/material";
 import { deepOrange } from "@mui/material/colors";
 import { signOut } from "firebase/auth";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { MdLogout } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
+import { SocketContext } from "../../App";
 import { customAuth } from "../../firebaseConfig";
 import { useGetUserName } from "../../hooks/customHook";
 import { LoginButton, WelcomeLabel } from "../../style";
@@ -29,11 +30,14 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
+  const socket = useContext(SocketContext);
   // const [socket, setSocket] = useState<any>(null);
-  const socket = useSelector((state: any) => state?.Common?.socket);
+  // const socket = useSelector((state: any) => state?.Common?.socket);
   const [message, setMessage] = useState("");
   // const [contacts, setContacts] = useState<any>([]);
   const contacts = useSelector((state: any) => state?.Common?.contacts);
+  const [bindContacts, setBindContacts] = useState<any>(contacts);
+  const [search, setSearch]: any = useState("");
 
   const [username, setUsername] = useState("");
   const userRegex = /^\d+$/;
@@ -65,26 +69,93 @@ const Sidebar: React.FC = () => {
   // ];
 
   useEffect(() => {
-    if (socket) {
-      // socket.on("loadcontacts", (contacts: Array<any>) => {
-      //   setContacts(contacts);
-      //   // setMessages((prevMessages) => [...prevMessages, msgData]);
-      // });
+    if (contacts?.length > 0) {
+      setBindContacts(contacts);
     }
-    // Clean up the socket connection when the component unmounts
-    return () => {
-      // socket && socket.off("loadcontacts");
+  }, [contacts]);
+
+  const debounce = (func: any) => {
+    let timer: any;
+    return function (this: any, ...args: any) {
+      const context = this;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 300);
     };
-  }, []);
+  };
+
+  const handleFilter = (value: string) => {
+    // props?.handleFilterChange(column, value, searchQuery);
+    // dispatch(saveCurrentKeyValue(props?.keyvalue));
+    const defCols: any = ["username", "preferedName"];
+    const listPath: any = {
+      username: {
+        id: "$.username",
+        locale: "username",
+        cell: {
+          type: "text",
+          dataType: "string",
+        },
+      },
+      preferedName: {
+        id: "$.preferedName",
+        locale: "preferedName",
+        cell: {
+          type: "text",
+          dataType: "string",
+        },
+      },
+    };
+    const filteredList = contacts?.filter((row: any) => {
+      for (let columnInfo of defCols) {
+        let derivedPath: string = listPath?.[columnInfo]?.id || "";
+        if (derivedPath.indexOf("$.") !== -1) {
+          derivedPath = derivedPath.slice(2);
+        }
+
+        let celldata: any;
+        if (derivedPath?.indexOf(".") > -1) {
+          celldata = derivedPath
+            ?.split(".")
+            .reduce((o: any, i: any) => o?.[i], row);
+        } else {
+          celldata = row?.[derivedPath];
+        }
+        if (
+          columnInfo &&
+          derivedPath &&
+          celldata?.toString()?.toLowerCase()?.search(value?.toLowerCase()) !==
+            -1 &&
+          celldata?.toString()?.toLowerCase()?.search(value?.toLowerCase()) !==
+            undefined
+        ) {
+          return row;
+        }
+      }
+    });
+    setBindContacts(filteredList);
+  };
+  const optimizedFn = useCallback(debounce(handleFilter), []);
 
   return (
     <SidebarContainer>
       <SidebarHeader>
         <Typography variant="h3">Chats</Typography>
-        <InputBase placeholder="Search or start new chat" />
+        <InputBase
+          placeholder="Search or start new chat"
+          onChange={(e: any) => {
+            optimizedFn(e.target.value);
+            // handleFilter(props?.keyvalue, e?.target?.value || '');
+            setSearch(e.target.value);
+          }}
+        />
       </SidebarHeader>
       <ContactsList>
-        {contacts?.map((contact: any, index: any) => (
+        {bindContacts?.map((contact: any, index: any) => (
           <>
             <ContactItem key={index} {...contact} />
             <Divider variant="middle" style={{ margin: "0px 16px" }} />
