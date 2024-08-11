@@ -7,11 +7,14 @@ import ChatWindow from "./components/ChatWindow/ChatWindow";
 import Header from "./components/Header/Header";
 import MessageInput from "./components/MessageInput/MessageInput";
 import Sidebar from "./components/Sidebar/Sidebar";
-import { useGetUserName } from "./hooks/customHook";
+import { useGetUserName, useSelectedUserName } from "./hooks/customHook";
 import { currentSelectedPerson, saveContacts } from "./redux/root_actions";
 // const socket = io("http://localhost:4001");
+interface props {
+  refreshedMsgs: Array<Record<string, any>>;
+}
 
-const Chat: React.FC = () => {
+const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
@@ -20,11 +23,13 @@ const Chat: React.FC = () => {
   //   const socket = useSelector((state: any) => state?.Common?.socket);
   //   sessionStorage.getItem("socket");
   const socket = useContext(SocketContext);
-  const currentSelUserStr = sessionStorage.getItem("current-selected-user");
-  const currSelUserObj =
-    currentSelUserStr && currentSelUserStr !== "undefined"
-      ? JSON.parse(currentSelUserStr)
-      : {};
+  const selectedUserName = useSelectedUserName();
+
+  useEffect(() => {
+    if (refreshedMsgs && refreshedMsgs?.length > 0) {
+      setMessages(refreshedMsgs);
+    }
+  }, [refreshedMsgs]);
 
   useEffect(() => {
     // Initialize Socket.io connection
@@ -36,10 +41,6 @@ const Chat: React.FC = () => {
         : null;
 
     if (socket) {
-      //   socket.on("loadcontacts", (contacts: any) => {
-      //     dispatch(saveContacts(contacts));
-      //   });
-
       socket.on("loadmessages", (msgData: any) => {
         setMessages(msgData);
       });
@@ -63,31 +64,16 @@ const Chat: React.FC = () => {
           setMessages((prevMessages) => [...prevMessages, msgData]);
         }
       });
-
-      socket.on("reconnect", (attempt: any) => {
-        console.log("Reconnected after", attempt, "attempts");
-        // Logic for when the socket reconnects
-      });
-
-      socket.on("disconnect", (reason: any) => {
-        console.log("Disconnected:", reason);
-        // Logic for when the socket disconnects
-      });
     }
 
     // Clean up the socket connection when the component unmounts
     return () => {
       dispatch(saveContacts([]));
-
       socket && socket.off("loadmessages");
       socket && socket.off("new_message");
       socket && socket.off("loadcontacts");
     };
   }, []);
-  //   const sendMessage = () => {
-  //     socket.emit("message", message);
-  //     setMessage("");
-  //   };
 
   return (
     <div className="box">
@@ -105,7 +91,7 @@ const Chat: React.FC = () => {
       <Box display="flex" height="90vh">
         <Sidebar />
         <Box display="flex" flexDirection="column" flexGrow={1}>
-          {currSelUserObj?.username ? (
+          {selectedUserName ? (
             <>
               <Header />
               <ChatWindow messages={messages} />

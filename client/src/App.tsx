@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import ErrorBoundary from "./Errorboundary";
+import { useGetUserName, useSelectedUserName } from "./hooks/customHook";
 import { LoginRoute } from "./LoginRoute";
 import { PrivateRoute } from "./PrivateRoute";
 import { saveContacts } from "./redux/root_actions";
@@ -22,7 +23,7 @@ interface Props {
 }
 
 const loading = () => <div></div>;
-export const SocketContext = React.createContext<Socket | null>(null);
+export const SocketContext = React.createContext<any>(null);
 
 const App: FC<Props> = (props: Props) => {
   const location = useLocation();
@@ -30,10 +31,13 @@ const App: FC<Props> = (props: Props) => {
   // const match = useMatch();
   const params: any = useParams();
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [messages, setMessages] = useState<Record<string, any>[]>([]);
 
   // const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
   const socketEndpoint = "http://localhost:4001"; // Your server's URL
   const dispatch = useDispatch();
+  const authUserName = useGetUserName();
+  const selectedUserName = useSelectedUserName();
 
   useEffect(() => {
     window.onpopstate = (e) => {
@@ -100,11 +104,47 @@ const App: FC<Props> = (props: Props) => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   return () => {
-  //     socket?.off("loadcontacts");
-  //   };
-  // }, []);
+  useEffect(() => {
+    // Handling on refresh
+
+    const storedSocketId = sessionStorage.getItem("socketId");
+    // const socketIdObj =
+    //   socketIdStr && socketIdStr !== "undefined" ? JSON.parse(socketIdStr) : {};
+    // const storedSocketId = socketIdObj?.socketId;
+    if (storedSocketId) {
+      // Initialize socket connection
+      const refresedSocket = io(socketEndpoint, {
+        query: { socketId: storedSocketId, username: authUserName },
+        transports: ["websocket"],
+      });
+
+      setSocket(refresedSocket);
+      // Save socket ID to session storage
+      refresedSocket.on("connect", () => {
+        // sessionStorage.setItem("socketId", newSocket.id || "");
+        console.log("Reconnected to server");
+      });
+      refresedSocket.emit("join", authUserName);
+      refresedSocket.emit("new-user-chat", {
+        sender: authUserName,
+        recipient: selectedUserName,
+      });
+
+      refresedSocket.on("loadcontacts", (contacts: any) => {
+        dispatch(saveContacts(contacts));
+      });
+
+      refresedSocket.on("loadmessages", (msgs) => {
+        // sessionStorage.setItem("socketId", newSocket.id || "");
+        console.log("Refreshed loaded messages====>", msgs);
+        setMessages(msgs);
+      });
+    }
+
+    return () => {
+      socket && socket.disconnect();
+    };
+  }, []);
 
   const establishSocketConnection = (username: string) => {
     const newSocket = io(socketEndpoint, {
@@ -119,6 +159,7 @@ const App: FC<Props> = (props: Props) => {
       reconnectionDelayMax: 5000, // Maximum time delay between reconnection attempts
       timeout: 20000, // Timeout before the connection is considered lost
     });
+
     // Handle connection events
     newSocket.on("connect", () => {
       console.log("Connected to server");
@@ -126,6 +167,7 @@ const App: FC<Props> = (props: Props) => {
         username: username,
       });
 
+      sessionStorage.setItem("socketId", newSocket.id || "");
       sessionStorage.setItem("user", userInfo);
       navigate("/home");
 
@@ -185,7 +227,11 @@ const App: FC<Props> = (props: Props) => {
                     ) : (
                       <PrivateRoute>
                         <Suspense fallback={loading()}>
-                          <route.component {...props} name={name} />
+                          <route.component
+                            {...props}
+                            name={name}
+                            refreshedMsgs={messages}
+                          />
                         </Suspense>
                       </PrivateRoute>
                     )}

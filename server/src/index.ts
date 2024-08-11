@@ -89,7 +89,7 @@ app.post('/api/login', async (req: Request, res: Response, next: NextFunction) =
   const userId = req.body?.userId;
   const username: string = userId?.split('@')?.[0];
   const prefName = username?.charAt(0)?.toUpperCase() + username?.slice(1);
-  console.log('!!!! /login entered');
+  //   console.log('!!!! /login entered');
   try {
     const user = await User.findOne({
       userId: {
@@ -102,7 +102,7 @@ app.post('/api/login', async (req: Request, res: Response, next: NextFunction) =
     };
     req.session.save((err: any) => {
       if (!err) {
-        console.log('Session saved successfully', req.session);
+        console.log('Session saved successfully', req.session?.userData);
       } else {
         console.log(`Error saving session: ${err}`);
       }
@@ -219,6 +219,7 @@ function convertTo12HourFormat() {
 }
 
 io.on('connection', async (socket) => {
+  console.log('                                ');
   console.log('User connected:', socket.id);
   const req = socket.request as any;
   let disconnectTimeout: any;
