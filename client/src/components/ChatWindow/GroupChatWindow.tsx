@@ -1,19 +1,12 @@
 import { FC, useEffect, useRef } from "react";
-import {
-  useSelectedGroupId,
-  useSelectedUserName,
-} from "../../hooks/customHook";
 import { ChatWindowContainer } from "./ChatWindow.styles";
 import GroupMessageBubble from "./GroupMessageBubble";
-import MessageBubble from "./MessageBubble";
 
 type props = {
   messages: any;
 };
-const ChatWindow: FC<props> = ({ messages }: props) => {
+const GroupChatWindow: FC<props> = ({ messages }: props) => {
   const endOfMessages: any = useRef();
-  const selectedGrpId = useSelectedGroupId();
-  const selectedUserName = useSelectedUserName();
 
   useEffect(() => {
     scrollToBottom();
@@ -27,16 +20,12 @@ const ChatWindow: FC<props> = ({ messages }: props) => {
 
   return (
     <ChatWindowContainer>
-      {messages.map((message: any, index: number) =>
-        selectedGrpId ? (
-          <GroupMessageBubble key={index} {...message} />
-        ) : (
-          <MessageBubble key={index} {...message} />
-        )
-      )}
+      {messages.map((message: any, index: number) => (
+        <GroupMessageBubble key={index} {...message} />
+      ))}
       <div ref={endOfMessages}></div>
     </ChatWindowContainer>
   );
 };
 
-export default ChatWindow;
+export default GroupChatWindow;

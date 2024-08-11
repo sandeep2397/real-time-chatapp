@@ -8,8 +8,10 @@ import {
   COMMON_ACTION_SUCCESS,
   CURRENT_SELECTED_PERSON,
   SAVE_CONTACTS,
+  SAVE_GROUPS,
   SAVE_LOGGED_IN_DATA,
   SAVE_MENU_STATE,
+  SAVE_PER_GROUP_USERS,
   SAVE_SOCKET,
   SET_FIELDS_JSON,
   SET_FIELDS_STATE,
@@ -69,11 +71,19 @@ export const saveSocket = (data: any): CommonAction => ({
   type: SAVE_SOCKET,
   payload: data,
 });
-export const currentSelectedPerson = (data: any): CommonAction => ({
+export const selectedGroupOrPerson = (data: any): CommonAction => ({
   type: CURRENT_SELECTED_PERSON,
   payload: data,
 });
 export const saveContacts = (data: any): CommonAction => ({
   type: SAVE_CONTACTS,
+  payload: data,
+});
+export const saveGroups = (data: any): CommonAction => ({
+  type: SAVE_GROUPS,
+  payload: data,
+});
+export const saveGroupParticipants = (data: any): CommonAction => ({
+  type: SAVE_PER_GROUP_USERS,
   payload: data,
 });

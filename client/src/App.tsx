@@ -1,4 +1,13 @@
 import { css, Global } from "@emotion/react";
+import {
+  blue,
+  lightGreen,
+  orange,
+  pink,
+  purple,
+  red,
+  yellow,
+} from "@mui/material/colors";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import React, { FC, Suspense, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
@@ -11,10 +20,18 @@ import {
 } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import ErrorBoundary from "./Errorboundary";
-import { useGetUserName, useSelectedUserName } from "./hooks/customHook";
+import {
+  useGetUserName,
+  useSelectedGroupId,
+  useSelectedUserName,
+} from "./hooks/customHook";
 import { LoginRoute } from "./LoginRoute";
 import { PrivateRoute } from "./PrivateRoute";
-import { saveContacts } from "./redux/root_actions";
+import {
+  saveContacts,
+  saveGroupParticipants,
+  saveGroups,
+} from "./redux/root_actions";
 import { routes } from "./routes";
 import { isUserAuthenticated } from "./utils/auth";
 interface Props {
@@ -38,6 +55,7 @@ const App: FC<Props> = (props: Props) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
   const selectedUserName = useSelectedUserName();
+  const selectedGrpId = useSelectedGroupId();
 
   useEffect(() => {
     window.onpopstate = (e) => {
@@ -125,9 +143,20 @@ const App: FC<Props> = (props: Props) => {
         console.log("Reconnected to server");
       });
       refresedSocket.emit("join", authUserName);
-      refresedSocket.emit("new-user-chat", {
-        sender: authUserName,
-        recipient: selectedUserName,
+
+      if (selectedUserName) {
+        refresedSocket.emit("new-user-chat", {
+          sender: authUserName,
+          recipient: selectedUserName,
+        });
+      } else if (selectedGrpId) {
+        refresedSocket.emit("new-group-chat", {
+          groupId: selectedGrpId,
+        });
+      }
+
+      refresedSocket.on("loadgroups", (groups: any) => {
+        dispatch(saveGroups(groups));
       });
 
       refresedSocket.on("loadcontacts", (contacts: any) => {
@@ -139,10 +168,39 @@ const App: FC<Props> = (props: Props) => {
         console.log("Refreshed loaded messages====>", msgs);
         setMessages(msgs);
       });
+
+      refresedSocket.on("load-group-messages", (groupData: any) => {
+        // sessionStorage.setItem("socketId", newSocket.id || "");
+        console.log("Refreshed loaded Group messages====>", groupData);
+        const colors: any = {
+          color0: yellow[700],
+          color1: red[400],
+          color2: blue[400],
+          color3: orange[400],
+          color4: purple[400],
+          color5: lightGreen[400],
+          color6: pink[400],
+          color7: yellow[400],
+        };
+        const saveParticipants = groupData?.participants?.map(
+          (data: any, index: number) => {
+            return {
+              ...data,
+              color: colors?.[`color${index}`] || "#434343",
+            };
+          }
+        );
+        dispatch(saveGroupParticipants(saveParticipants));
+        setMessages(groupData?.messages);
+      });
     }
 
     return () => {
       socket && socket.disconnect();
+      socket && socket.off("loadcontacts");
+      socket && socket.off("loadgroups");
+      socket && socket.off("load-group-messages");
+      socket && socket.off("loadmessages");
     };
   }, []);
 
@@ -174,6 +232,11 @@ const App: FC<Props> = (props: Props) => {
       // dispatch(saveSocket(newSocket));
       newSocket.emit("join", username); // Emit a join event with the username
     });
+
+    newSocket.on("loadgroups", (groups: any) => {
+      dispatch(saveGroups(groups));
+    });
+
     newSocket.on("loadcontacts", (contacts: any) => {
       dispatch(saveContacts(contacts));
     });

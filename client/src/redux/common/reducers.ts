@@ -9,8 +9,10 @@ import {
   COMMON_ACTION_SUCCESS,
   CURRENT_SELECTED_PERSON,
   SAVE_CONTACTS,
+  SAVE_GROUPS,
   SAVE_LOGGED_IN_DATA,
   SAVE_MENU_STATE,
+  SAVE_PER_GROUP_USERS,
   SAVE_SOCKET,
   SET_FIELDS_JSON,
   SET_FIELDS_STATE,
@@ -40,6 +42,8 @@ type State = {
   cachedMediaData: Array<any>;
   selectedUser: any;
   contacts: Array<any>;
+  groups: Array<any>;
+  participants: Array<any>;
 };
 
 const INIT_STATE = {
@@ -48,6 +52,7 @@ const INIT_STATE = {
   fieldsState: {},
   socket: null,
   contacts: [],
+  groups: [],
   stepperState: {
     activeStep: 0,
     id: "",
@@ -64,6 +69,7 @@ const INIT_STATE = {
     handleNext: () => {},
   },
   cachedMediaData: [],
+  participants: [],
 };
 
 const Common = (state: State = INIT_STATE, action: CommonAction) => {
@@ -96,6 +102,10 @@ const Common = (state: State = INIT_STATE, action: CommonAction) => {
       return { ...state, selectedUser: action.payload };
     case SAVE_CONTACTS:
       return { ...state, contacts: action.payload };
+    case SAVE_GROUPS:
+      return { ...state, groups: action.payload };
+    case SAVE_PER_GROUP_USERS:
+      return { ...state, participants: action.payload };
     default:
       return { ...state };
   }

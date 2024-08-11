@@ -68,7 +68,7 @@ const Login: FC<Props> = (props) => {
 
   // useEffect(() => {
   //   if (username) {
-  //     dispatch(currentSelectedPerson({}));
+  //     dispatch(selectedGroupOrPerson({}));
   //     const newSocket = io(socketEndpoint, {
   //       query: {
   //         username,
@@ -290,7 +290,7 @@ const Login: FC<Props> = (props) => {
               textAlign: "center",
               marginTop: "4px",
               marginBottom: "8px",
-              height: "90px",
+              height: "100px",
               width: "210px",
             }}
           >

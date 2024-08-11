@@ -1,30 +1,33 @@
 import { Avatar, ListItemAvatar, ListItemText } from "@mui/material";
-import { teal } from "@mui/material/colors";
+import { grey } from "@mui/material/colors";
 import React, { useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { SocketContext } from "../../App";
-import { useGetUserName, useSelectedUserName } from "../../hooks/customHook";
+import { useGetUserName, useSelectedGroupId } from "../../hooks/customHook";
 import { selectedGroupOrPerson } from "../../redux/root_actions";
+import { getBlobImageUrl } from "../../utils/blobImageUrl";
 import { ContactItemContainer, Timestamp } from "./Sidebar.styles";
 
-interface ContactItemProps {
-  preferedName: string;
-  username: string;
-  lastMessage: string;
-  timestamp: string;
-  avatar: string;
+interface Props {
+  name: string;
+  description: string;
+  _id: string;
+  groupImage: string;
+  lastMessage?: string;
+  timestamp?: string;
 }
 
-const ContactItem: React.FC<ContactItemProps> = ({
-  preferedName,
-  username,
+const GroupItem: React.FC<Props> = ({
+  _id,
+  name,
+  description,
+  groupImage,
   lastMessage,
   timestamp,
-  avatar,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
-  const selectedUserName = useSelectedUserName();
+  const selectedGrpId = useSelectedGroupId();
 
   const userRegex = /^\d+$/;
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
@@ -34,9 +37,11 @@ const ContactItem: React.FC<ContactItemProps> = ({
   //     ? JSON.parse(currentSelUserStr)
   //     : {};
 
-  const shouldHighlight = selectedUserName === username;
+  const shouldHighlight = selectedGrpId === _id;
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
+
+  const blobUrl = getBlobImageUrl(groupImage);
 
   return (
     <ContactItemContainer
@@ -45,43 +50,42 @@ const ContactItem: React.FC<ContactItemProps> = ({
       }}
       onClick={() => {
         if (socket) {
-          socket.emit("new-user-chat", {
-            sender: authUserName,
-            recipient: username,
+          socket.emit("new-group-chat", {
+            groupId: _id,
+            // recipient: name,
           });
         }
 
-        const userObj = {
-          preferedName,
-          username,
-          lastMessage,
-          timestamp,
-          avatar,
+        const groupObj = {
+          type: "group",
+          id: _id,
         };
 
-        sessionStorage.setItem(
-          "current-selected-user",
-          JSON.stringify(userObj)
+        sessionStorage.setItem("selected-group", JSON.stringify(groupObj));
+        sessionStorage.removeItem("current-selected-user");
+        dispatch(
+          selectedGroupOrPerson({
+            _id,
+            preferedName: name,
+            description,
+            image: groupImage,
+            lastMessage,
+            timestamp,
+          })
         );
-        sessionStorage.removeItem("selected-group");
-
-        dispatch(selectedGroupOrPerson(userObj));
       }}
     >
       <ListItemAvatar>
         <Avatar
-          alt={
-            (!userRegex.test(preferedName) && preferedName?.toUpperCase()) ||
-            preferedName?.toUpperCase()
-          }
-          sx={{ bgcolor: teal?.[500], width: 32, height: 32 }}
-          src="/static/images/avatar/2.jpg"
+          alt={"Group"}
+          sx={{ bgcolor: grey?.[500], width: 32, height: 32 }}
+          src={blobUrl}
         />
       </ListItemAvatar>
-      <ListItemText primary={preferedName} secondary={lastMessage} />
+      <ListItemText primary={name} secondary={lastMessage} />
       <Timestamp>{timestamp}</Timestamp>
     </ContactItemContainer>
   );
 };
 
-export default ContactItem;
+export default GroupItem;

@@ -17,3 +17,12 @@ export const useSelectedUserName = () => {
   const selUsername = currSelUserObj?.username;
   return selUsername || "";
 };
+
+export const useSelectedGroupId = () => {
+  const selGroupStr = sessionStorage.getItem("selected-group");
+  const selGroupObj =
+    selGroupStr && selGroupStr !== "undefined" ? JSON.parse(selGroupStr) : {};
+
+  const selGrpId = selGroupObj?.id;
+  return selGrpId || "";
+};

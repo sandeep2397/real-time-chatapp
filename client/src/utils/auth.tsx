@@ -15,8 +15,8 @@ export const removeSession = () => {
   // cookies.remove("user-info", {
   //   path: "/",
   // });
-
   sessionStorage.removeItem("user");
   sessionStorage.removeItem("current-selected-user");
   sessionStorage.removeItem("socketId");
+  sessionStorage.clear();
 };

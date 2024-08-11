@@ -19,6 +19,7 @@ import { useGetUserName } from "../../hooks/customHook";
 import { LoginButton, WelcomeLabel } from "../../style";
 import { removeSession } from "../../utils/auth";
 import ContactItem from "./ContactItem";
+import GroupItem from "./GroupItem";
 import {
   ContactItemContainer,
   ContactsList,
@@ -36,6 +37,8 @@ const Sidebar: React.FC = () => {
   const [message, setMessage] = useState("");
   // const [contacts, setContacts] = useState<any>([]);
   const contacts = useSelector((state: any) => state?.Common?.contacts);
+  const groups = useSelector((state: any) => state?.Common?.groups);
+
   const [bindContacts, setBindContacts] = useState<any>(contacts);
   const [search, setSearch]: any = useState("");
 
@@ -155,6 +158,12 @@ const Sidebar: React.FC = () => {
         />
       </SidebarHeader>
       <ContactsList>
+        {groups?.map((contact: any, index: any) => (
+          <>
+            <GroupItem key={index} {...contact} />
+            <Divider variant="middle" style={{ margin: "0px 16px" }} />
+          </>
+        ))}
         {bindContacts?.map((contact: any, index: any) => (
           <>
             <ContactItem key={index} {...contact} />
@@ -192,7 +201,7 @@ const Sidebar: React.FC = () => {
               socket.disconnect(); // Disconnect the socket
               console.log("Socket disconnected:", socket.id);
             }
-            // dispatch(currentSelectedPerson({}));
+            // dispatch(selectedGroupOrPerson({}));
             navigate("/login");
           } catch (err) {
             console.error("Err===>", err);
