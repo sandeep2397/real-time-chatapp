@@ -33,8 +33,8 @@ const App: FC<Props> = (props: Props) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
 
-  // const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
-  const socketEndpoint = "http://localhost:4001"; // Your server's URL
+  const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
+  // const socketEndpoint = "http://localhost:4001"; // Your server's URL
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
   const selectedUserName = useSelectedUserName();
