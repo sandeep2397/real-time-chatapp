@@ -16,12 +16,15 @@ const GroupMessageBubble = ({ sender, content, timestamp, groupId }: props) => {
   const username = useGetUserName();
   const participants =
     useSelector((state: any) => state?.Common?.participants) || [];
-  const savedColor: string = _.result(
-    _.find(participants, (userData: any) => {
-      return userData?.username === sender;
-    }),
-    "color"
-  );
+  // const savedColor: string = _.result(
+  //   _.find(participants, (userData: any) => {
+  //     return userData?.username === sender;
+  //   }),
+  //   "color"
+  // );
+  const derivedUser: any = _.find(participants, (userData: any) => {
+    return userData?.username === sender;
+  });
 
   const isMine = sender === username;
   return (
@@ -41,11 +44,11 @@ const GroupMessageBubble = ({ sender, content, timestamp, groupId }: props) => {
         variant="subtitle2"
         style={{
           fontWeight: "bold",
-          color: isMine ? teal[500] : savedColor ?? "#a7a7a7",
+          color: isMine ? teal[500] : derivedUser?.color ?? "#a7a7a7",
           marginBottom: "5px",
         }}
       >
-        {isMine ? "You" : sender}
+        {isMine ? "You" : derivedUser?.preferedName || sender}
       </Typography>
       <Typography variant="body2" sx={{ marginBottom: "5px", lineHeight: 1.5 }}>
         {content}
