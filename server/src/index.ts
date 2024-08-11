@@ -7,6 +7,7 @@ import { createServer } from 'http';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import { Chat, IMessages } from './models/Chat.js';
+import { Group } from './models/Group.js';
 import { User } from './models/Users.js';
 import contacts from './stubbedContacts.js';
 
@@ -152,6 +153,22 @@ app.post('/api/login', async (req: Request, res: Response, next: NextFunction) =
   }
 });
 
+app.post('/api/creategroup', async (req: Request, res: Response, next: NextFunction) => {
+  const reqBody = req?.body || {};
+  const newGroup = new Group({
+    name: reqBody?.name,
+    groupImage: reqBody?.groupImage,
+    participants: reqBody?.participants,
+  });
+  try {
+    const group = await newGroup.save();
+    res.json({ status: 200, msg: 'Group created successfully', group });
+  } catch (err) {
+    console.error('!!!! failed to create the group');
+    res.json({ status: 400, msg: '!!!! failed to create the group', err });
+  }
+});
+
 app.use('/', (req: any, res: any) => {
   res.status(200).send({ message: 'Empty route Server is up and running!' });
 });
@@ -245,9 +262,20 @@ io.on('connection', async (socket) => {
       }
     };
 
+    const loadGroups = async () => {
+      try {
+        const dbGroups: any = await Group.aggregate().match({ 'participants.username': bindUserName });
+        console.log(`${dbGroups?.length ?? 0} groups exists for user ${username} loaded========>`);
+        socket.emit('loadgroups', dbGroups || []);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
     if (bindUserName) {
+      loadGroups();
       loadContacts();
-      //   loadMessages();
+      //   loadUserMessages();
     }
     if (username) {
       const res = await User.updateOne(
@@ -255,6 +283,7 @@ io.on('connection', async (socket) => {
         {
           $set: {
             socketId: socket.id,
+            online: true,
           },
         }
       );
@@ -264,7 +293,7 @@ io.on('connection', async (socket) => {
 
   socket.on('new-user-chat', ({ sender, recipient }: any) => {
     const username = bindUserName;
-    const loadMessages = async () => {
+    const loadUserMessages = async () => {
       try {
         const sessionUsername = req.session.username;
         const chats: any = await Chat.find({ participants: { $all: [bindUserName, recipient] } })
@@ -280,13 +309,13 @@ io.on('connection', async (socket) => {
       }
     };
     if (bindUserName) {
-      loadMessages();
+      loadUserMessages();
     }
   });
 
   socket.on('send_message', async ({ content, recipient }: { content: string; recipient: string }) => {
     const sessionUsername = bindUserName;
-    console.log('new message from send_message:' + recipient + 'to ' + sessionUsername);
+    console.log('new message from send_message:' + recipient + ' to ' + sessionUsername);
     if (!sessionUsername) return;
 
     const userList: any = (await User.find({ username: { $in: [recipient, sessionUsername] } })) || [];
@@ -325,14 +354,105 @@ io.on('connection', async (socket) => {
     });
   });
 
-  socket.on('disconnect', (reason) => {
-    disconnectTimeout = setTimeout(() => {
-      console.log('User disconnected:', bindUserName);
-      console.log('reason:', reason);
-      if (bindUserName) {
-        User.findOneAndUpdate({ username: bindUserName }, { online: false });
+  /**================== Group messages=================== */
+  socket.on('new-group-chat', ({ groupId }: any) => {
+    const username = bindUserName;
+    const loadGrpMessages = async () => {
+      try {
+        const sessionUsername = req.session.username;
+        const group: any = await Group.findById(groupId);
+        if (group) {
+          console.log(`${group?.messages?.length ?? 0} messages shared for the group ${group?.name} ========>`);
+
+          socket.emit('load-group-messages', { messages: group?.messages, participants: group?.participants } || []);
+        }
+      } catch (err) {
+        console.log(err);
       }
-    }, 5000); // Delay for 5 seconds
+    };
+    if (bindUserName) {
+      loadGrpMessages();
+    }
+  });
+
+  socket.on('broadcast_new_message', async ({ content, groupId }: { content: string; groupId: string }) => {
+    const sessionUsername = bindUserName;
+    console.log('new group message from :' + sessionUsername);
+    if (!sessionUsername) return;
+
+    const group: any = await Group.findById(groupId);
+
+    if (group) {
+      const convertedDateString = convertTo12HourFormat();
+      const newGroupObjId = new mongoose.Types.ObjectId(groupId);
+      const userSocketIDs: any =
+        (await Group.aggregate()
+          .match({
+            _id: newGroupObjId,
+          })
+          .lookup({
+            from: 'users',
+            localField: 'participants.username',
+            foreignField: 'username',
+            as: 'users',
+          })
+          .project({
+            _id: 0,
+            sockets: '$users.socketId',
+          })) || [];
+
+      const msgObj: IMessages = {
+        sender: sessionUsername,
+        content,
+        timestamp: convertedDateString,
+        type: 'text',
+      };
+      const concatedMsgs = [...group?.messages, msgObj];
+      try {
+        const updatedUser = await Group.findByIdAndUpdate(
+          groupId,
+          {
+            $set: {
+              messages: concatedMsgs,
+            },
+          },
+          { new: true, useFindAndModify: false }
+        );
+        io.to(userSocketIDs?.[0]?.sockets).emit('new_group_message', {
+          sender: sessionUsername,
+          timestamp: convertedDateString,
+          content,
+          groupId,
+        });
+      } catch (err) {
+        console.log('Group msg Update Failed ', err);
+      }
+    }
+  });
+
+  socket.on('disconnect', async (reason) => {
+    // disconnectTimeout = setTimeout(() => {
+    //   console.log('User disconnected:', bindUserName);
+    //   console.log('reason:', reason);
+    //   if (bindUserName) {
+    //     User.findOneAndUpdate({ username: bindUserName }, { online: false, socketId: '' });
+    //   }
+    // }, 5000); // Delay for 5 seconds
+    console.log('User disconnected:', bindUserName);
+    console.log('reason:', reason);
+    if (bindUserName) {
+      const res = await User.updateOne(
+        { username: bindUserName },
+        {
+          $set: {
+            online: false,
+            socketId: '',
+          },
+        }
+      );
+      console.log('socket removed !! for user===>', bindUserName);
+      //   User.findOneAndUpdate({ username: bindUserName }, { online: false, socketId: '' });
+    }
   });
 
   socket.on('reconnect', () => {
