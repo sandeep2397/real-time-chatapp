@@ -29,15 +29,13 @@ import {
 // import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ConfirmationResult, signInWithEmailAndPassword } from "firebase/auth";
 import { useDispatch } from "react-redux";
+import { socketEndpoint } from "./App";
 import { customAuth } from "./firebaseConfig";
 
 interface Props {
   children?: null;
   establishSocketConnection: (userId: string) => void;
 }
-
-// const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
-const socketEndpoint = "http://localhost:4001"; // Your server's URL
 
 const Login: FC<Props> = (props) => {
   const navigate = useNavigate();

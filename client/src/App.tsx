@@ -41,6 +41,9 @@ interface Props {
 
 const loading = () => <div></div>;
 export const SocketContext = React.createContext<any>(null);
+export const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
+
+// export const socketEndpoint = "http://localhost:4001"; // Your server's URL
 
 const App: FC<Props> = (props: Props) => {
   const location = useLocation();
@@ -50,8 +53,6 @@ const App: FC<Props> = (props: Props) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
 
-  const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
-  // const socketEndpoint = "http://localhost:4001"; // Your server's URL
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
   const selectedUserName = useSelectedUserName();
