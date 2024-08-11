@@ -73,14 +73,31 @@ app.get('/api/hello', (req: any, res: any) => {
 });
 
 // HTTP route for login
-app.post('/api/login', async (req: Request, res: Response) => {
+const checkAdmin = (req: Request, res: Response, next: NextFunction) => {
   const userId = req.body?.userId;
   const username = userId?.split('@')?.[0];
+  if (req.session && req.session.userData) {
+    // User is authenticated, proceed to the next middleware or route handler
+    next();
+  } else {
+    // User is not authenticated, send an unauthorized response
+    res.status(401).json({ message: 'Unauthorized. Please log in to access this resource.' });
+  }
+};
+
+app.post('/api/login', async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.body?.userId;
+  const username: string = userId?.split('@')?.[0];
+  const prefName = username?.charAt(0)?.toUpperCase() + username?.slice(1);
   console.log('!!!! /login entered');
   try {
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({
+      userId: {
+        $regex: new RegExp(userId, 'i'),
+      },
+    });
     req.session.userData = {
-      username: username,
+      username: username?.toLowerCase(),
       userId,
     };
     req.session.save((err: any) => {
@@ -94,8 +111,33 @@ app.post('/api/login', async (req: Request, res: Response) => {
     if (user) {
       res.json({ status: 200, msg: 'Logged in successfully', user });
     } else {
-      const filteredContacts = contacts?.filter((contact: any) => contact.username !== username);
-      const newUser = new User({ userId, username, contacts: filteredContacts, online: true, socketId: '' });
+      const loadAllContacts = contacts || [];
+      const adminContact = [
+        {
+          username: 'sandeep',
+          preferedName: 'Sandy',
+        },
+      ];
+      // const filteredContacts = loadAllContacts?.filter((contact: any) => contact.username !== username);
+      const newUser = new User({
+        userId,
+        username: username?.toLowerCase(),
+        contacts: adminContact,
+        online: true,
+        socketId: '',
+      });
+
+      const adminUser: any = await User.findOne({ username: 'sandeep' });
+      const appendedContacts = [...(adminUser?.contacts || []), { username: username, preferedName: prefName }];
+      const updatedRes = await User.updateOne(
+        { username: 'sandeep' },
+        {
+          $set: {
+            contacts: appendedContacts,
+          },
+        }
+      );
+
       try {
         await newUser.save();
         console.log('User Added successfully');
