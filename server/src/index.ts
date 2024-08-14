@@ -313,46 +313,68 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('send_message', async ({ content, recipient }: { content: string; recipient: string }) => {
-    const sessionUsername = bindUserName;
-    console.log('new message from send_message:' + recipient + ' to ' + sessionUsername);
-    if (!sessionUsername) return;
+  socket.on(
+    'send_message',
+    async ({
+      content,
+      recipient,
+      fileUrl,
+      fileType,
+      fileName,
+    }: {
+      content: string;
+      recipient: string;
+      fileUrl: string;
+      fileType: string;
+      fileName: string;
+    }) => {
+      const sessionUsername = bindUserName;
+      console.log('new message from send_message:' + recipient + ' to ' + sessionUsername);
+      if (!sessionUsername) return;
 
-    const userList: any = (await User.find({ username: { $in: [recipient, sessionUsername] } })) || [];
-    const userSocketIDs = userList?.map((user: any) => user?.socketId);
+      const userList: any = (await User.find({ username: { $in: [recipient, sessionUsername] } })) || [];
+      const userSocketIDs = userList?.map((user: any) => user?.socketId);
 
-    const chat = await Chat.findOne({ participants: { $all: [sessionUsername, recipient] } });
-    const gmtDateString = new Date().toDateString();
-    const convertedDateString = convertTo12HourFormat();
-
-    if (!chat) {
+      const chat = await Chat.findOne({ participants: { $all: [sessionUsername, recipient] } });
+      const gmtDateString = new Date().toDateString();
+      const convertedDateString = convertTo12HourFormat();
       const msgObj: IMessages = {
         sender: sessionUsername,
         content,
         timestamp: convertedDateString,
         type: 'text',
       };
-      const newChat = new Chat({
-        participants: [sessionUsername, recipient],
-        messages: [msgObj],
-      });
-      await newChat.save();
-    } else {
-      const oldMsgs: any = chat.messages || [];
+      if (fileUrl) {
+        msgObj['fileUrl'] = fileUrl;
+      }
+      if (fileType) {
+        msgObj['fileType'] = fileType;
+      }
+      if (fileName) {
+        msgObj['fileName'] = fileName;
+      }
+      if (!chat) {
+        const newChat = new Chat({
+          participants: [sessionUsername, recipient],
+          messages: [msgObj],
+        });
+        await newChat.save();
+      } else {
+        const oldMsgs: any = chat.messages || [];
 
-      let newMsgs =
-        [...oldMsgs, { sender: sessionUsername, content, timestamp: convertedDateString, type: 'text' }] || [];
-      await chat.updateOne({
-        messages: newMsgs,
+        let newMsgs = [...oldMsgs, msgObj] || [];
+        await chat.updateOne({
+          messages: newMsgs,
+        });
+      }
+      io.to(userSocketIDs).emit('new_message', {
+        sender: sessionUsername,
+        timestamp: convertedDateString,
+        recipient,
+        content,
       });
     }
-    io.to(userSocketIDs).emit('new_message', {
-      sender: sessionUsername,
-      timestamp: convertedDateString,
-      recipient,
-      content,
-    });
-  });
+  );
 
   /**================== Group messages=================== */
   socket.on('new-group-chat', ({ groupId }: any) => {
@@ -375,60 +397,84 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('broadcast_new_message', async ({ content, groupId }: { content: string; groupId: string }) => {
-    const sessionUsername = bindUserName;
-    console.log('new group message from :' + sessionUsername);
-    if (!sessionUsername) return;
+  socket.on(
+    'broadcast_new_message',
+    async ({
+      content,
+      groupId,
+      fileUrl,
+      fileType,
+      fileName,
+    }: {
+      content: string;
+      groupId: string;
+      fileUrl: string;
+      fileType: string;
+      fileName: string;
+    }) => {
+      const sessionUsername = bindUserName;
+      console.log('new group message from :' + sessionUsername);
+      if (!sessionUsername) return;
 
-    const group: any = await Group.findById(groupId);
+      const group: any = await Group.findById(groupId);
 
-    if (group) {
-      const convertedDateString = convertTo12HourFormat();
-      const newGroupObjId = new mongoose.Types.ObjectId(groupId);
-      const userSocketIDs: any =
-        (await Group.aggregate()
-          .match({
-            _id: newGroupObjId,
-          })
-          .lookup({
-            from: 'users',
-            localField: 'participants.username',
-            foreignField: 'username',
-            as: 'users',
-          })
-          .project({
-            _id: 0,
-            sockets: '$users.socketId',
-          })) || [];
+      if (group) {
+        const convertedDateString = convertTo12HourFormat();
+        const newGroupObjId = new mongoose.Types.ObjectId(groupId);
+        const userSocketIDs: any =
+          (await Group.aggregate()
+            .match({
+              _id: newGroupObjId,
+            })
+            .lookup({
+              from: 'users',
+              localField: 'participants.username',
+              foreignField: 'username',
+              as: 'users',
+            })
+            .project({
+              _id: 0,
+              sockets: '$users.socketId',
+            })) || [];
 
-      const msgObj: IMessages = {
-        sender: sessionUsername,
-        content,
-        timestamp: convertedDateString,
-        type: 'text',
-      };
-      const concatedMsgs = [...group?.messages, msgObj];
-      try {
-        const updatedUser = await Group.findByIdAndUpdate(
-          groupId,
-          {
-            $set: {
-              messages: concatedMsgs,
-            },
-          },
-          { new: true, useFindAndModify: false }
-        );
-        io.to(userSocketIDs?.[0]?.sockets).emit('new_group_message', {
+        const msgObj: IMessages = {
           sender: sessionUsername,
-          timestamp: convertedDateString,
           content,
-          groupId,
-        });
-      } catch (err) {
-        console.log('Group msg Update Failed ', err);
+          timestamp: convertedDateString,
+          type: 'text',
+        };
+        if (fileUrl) {
+          msgObj['fileUrl'] = fileUrl;
+        }
+        if (fileType) {
+          msgObj['fileType'] = fileType;
+        }
+        if (fileName) {
+          msgObj['fileName'] = fileName;
+        }
+        const concatedMsgs = [...group?.messages, msgObj];
+        try {
+          const updatedUser = await Group.findByIdAndUpdate(
+            groupId,
+            {
+              $set: {
+                messages: concatedMsgs,
+              },
+            },
+            { new: true, useFindAndModify: false }
+          );
+          io.to(userSocketIDs?.[0]?.sockets).emit('new_group_message', {
+            sender: sessionUsername,
+            timestamp: convertedDateString,
+            content,
+            groupId,
+          });
+        } catch (err) {
+          console.log('Group msg Update Failed ', err);
+        }
       }
     }
-  });
+  );
 
   socket.on('disconnect', async (reason) => {
     // disconnectTimeout = setTimeout(() => {

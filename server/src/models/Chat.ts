@@ -6,6 +6,9 @@ export type IMessages = {
     content: String,
     timestamp: String,
     type: String, // text, image, etc.
+    fileUrl?:string;
+    fileName?: string;
+    fileType?:string;
   }
 
 const chatSchema = new mongoose.Schema({

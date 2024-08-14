@@ -182,18 +182,29 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
             </>
           )}
           <MessageInput
-            sendMessage={async (receivedMsg: string) => {
+            sendMessage={async (
+              receivedMsg: string,
+              fileUrl?: string,
+              fileType?: string,
+              fileName?: string
+            ) => {
               if (socket) {
                 if (receivedMsg?.trim()) {
                   if (selectedGrpId) {
                     socket.emit("broadcast_new_message", {
                       content: receivedMsg,
                       groupId: selectedGrpId,
+                      fileUrl,
+                      fileType,
+                      fileName,
                     });
                   } else if (selectedUserName) {
                     socket.emit("send_message", {
                       content: receivedMsg,
                       recipient: selectedUser?.username,
+                      fileUrl,
+                      fileType,
+                      fileName,
                     });
                     dispatch(selectedGroupOrPerson(selectedUser));
                   }
