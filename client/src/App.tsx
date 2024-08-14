@@ -156,6 +156,25 @@ const App: FC<Props> = (props: Props) => {
         });
       }
 
+      const selGroupStr = sessionStorage.getItem("selected-group");
+      const selGroupObj =
+        selGroupStr && selGroupStr !== "undefined"
+          ? JSON.parse(selGroupStr)
+          : {};
+
+      const selGrpId = selGroupObj?.id;
+
+      const topic = selGrpId ? "group-user-typing" : "user-typing";
+      refresedSocket.emit(topic, {
+        sender: authUserName,
+        recipient: selectedUserName,
+        content: "",
+        groupId: selGrpId,
+        // fileUrl,
+        // fileType,
+        // fileName,
+      });
+
       refresedSocket.on("loadgroups", (groups: any) => {
         dispatch(saveGroups(groups));
       });
