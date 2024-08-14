@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { deepOrange } from "@mui/material/colors";
 import { signOut } from "firebase/auth";
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { FC, useCallback, useContext, useEffect, useState } from "react";
 import { MdLogout } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
@@ -27,7 +27,12 @@ import {
   SidebarHeader,
 } from "./Sidebar.styles";
 
-const Sidebar: React.FC = () => {
+interface props {
+  groupTypingData: any;
+  typingUserList: any;
+}
+
+const Sidebar: FC<props> = ({ groupTypingData, typingUserList }: props) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -135,7 +140,12 @@ const Sidebar: React.FC = () => {
       <ContactsList>
         {groups?.map((contact: any, index: any) => (
           <>
-            <GroupItem key={index} {...contact} />
+            <GroupItem
+              key={index}
+              groupTypingData={groupTypingData}
+              typingUserList={typingUserList}
+              {...contact}
+            />
             <Divider variant="middle" style={{ margin: "0px 16px" }} />
           </>
         ))}

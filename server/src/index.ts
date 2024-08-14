@@ -291,28 +291,6 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('user-typing', async ({ sender, recipient, content }: any) => {
-    // const username = bindUserName;
-    const userList: any = (await User.find({ username: { $in: [recipient, sender] } })) || [];
-    const userSocketIDs = userList?.map((user: any) => user?.socketId);
-
-    if (content) {
-      io.to(userSocketIDs).emit('show-typing', {
-        msg: `${sender} is typing...`,
-        sender: sender,
-        recipient,
-        content,
-      });
-    } else {
-      io.to(userSocketIDs).emit('hide-typing', {
-        msg: `${sender} is typing...`,
-        sender: sender,
-        recipient,
-        content,
-      });
-    }
-  });
-
   socket.on('new-user-chat', ({ sender, recipient }: any) => {
     const username = bindUserName;
     const loadUserMessages = async () => {
@@ -397,6 +375,28 @@ io.on('connection', async (socket) => {
       });
     }
   );
+
+  socket.on('user-typing', async ({ sender, recipient, content }: any) => {
+    // const username = bindUserName;
+    const userList: any = (await User.find({ username: { $in: [recipient, sender] } })) || [];
+    const userSocketIDs = userList?.map((user: any) => user?.socketId);
+
+    if (content) {
+      io.to(userSocketIDs).emit('show-typing', {
+        msg: `${sender} is typing...`,
+        sender: sender,
+        recipient,
+        content,
+      });
+    } else {
+      io.to(userSocketIDs).emit('hide-typing', {
+        msg: `${sender} is typing...`,
+        sender: sender,
+        recipient,
+        content,
+      });
+    }
+  });
 
   /**================== Group messages=================== */
   socket.on('group-user-typing', async ({ sender, content, groupId }: any) => {

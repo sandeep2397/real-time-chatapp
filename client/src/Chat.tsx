@@ -26,6 +26,8 @@ import {
   saveGroupParticipants,
   selectedGroupOrPerson,
 } from "./redux/root_actions";
+import { cloneDeep } from "lodash";
+import _ from "lodash";
 // const socket = io("http://localhost:4001");
 interface props {
   refreshedMsgs: Array<Record<string, any>>;
@@ -37,11 +39,18 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
   //   const [socket, setSocket] = useState<any>(null);
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
+  const participants =
+    useSelector((state: any) => state?.Common?.participants) || [];
   //   const socket = useSelector((state: any) => state?.Common?.socket);
   //   sessionStorage.getItem("socket");
   const socket = useContext(SocketContext);
   const selectedGrpId = useSelectedGroupId();
   const selectedUserName = useSelectedUserName();
+
+  const [typingUsersList, setTypingUsersList] = useState<any>([]);
+  // const [typingUserString, setTypingUserString] = useState<any>("");
+
+  const [groupUserTypingState, setGroupUserTypingState] = useState<any>({});
 
   useEffect(() => {
     if (refreshedMsgs && refreshedMsgs?.length > 0) {
@@ -124,12 +133,80 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
       });
     }
 
+    socket.on("show-group-user-typing", (data: any) => {
+      const typingUser: string = data?.sender;
+      const derivedUser: any = _.find(participants, (userData: any) => {
+        return userData?.username === typingUser;
+      });
+      const prefName = derivedUser?.preferedName || typingUser;
+      const msg = `${prefName} is typing...`;
+
+      setTypingUsersList((prevUsers: Array<string>) => {
+        if (!prevUsers?.includes(typingUser) && typingUser !== authUserName) {
+          return [...prevUsers, typingUser];
+        }
+        return prevUsers;
+      });
+
+      let typingUsersList = groupUserTypingState?.typingUsersList || [];
+      let newList = cloneDeep(typingUsersList);
+      // newList = [...typingUsersList, typingUser];
+      newList = typingUser && typingUser !== authUserName ? [typingUser] : [];
+      // typingUser && typingUser !== authUserName && newList?.push(typingUser);
+
+      const userTypingStr = newList?.join(" ,");
+
+      setGroupUserTypingState({
+        groupId: data?.groupId,
+        message: msg,
+        typingUsersList: newList,
+        userTypingStr,
+      });
+    });
+
+    socket.on("hide-group-user-typing", (data: any) => {
+      const typingUser: string = data?.sender;
+      // let typingUsersList = groupUserTypingState?.typingUsersList || [];
+      let filteredUserList = typingUsersList?.filter(
+        (user: any) => user?.username !== typingUser
+      );
+      const userTypingStr = filteredUserList?.join(" ,");
+
+      setTypingUsersList((prevUsers: Array<string>) => {
+        // Filter out the typingUser if it's already in the list
+        const updatedUsers = prevUsers.filter((user) => user !== typingUser);
+        // Return the updated list without adding the typingUser if it's the authUserName
+        return updatedUsers;
+      });
+
+      setGroupUserTypingState({
+        groupId: data?.groupId,
+        // message: msg,
+        typingUsersList: filteredUserList,
+        userTypingStr,
+      });
+    });
+
+    /** Between 2 user chats */
+    // socket.on("show-typing", (data: any) => {
+    //   if (data?.sender === username) {
+    //     setTyping(true);
+    //   }
+    // });
+
+    // socket.on("hide-typing", (data: any) => {
+    //   if (data?.sender === username) {
+    //     setTyping(false);
+    //   }
+    // });
+
     // Clean up the socket connection when the component unmounts
     return () => {
       dispatch(saveContacts([]));
       socket && socket.off("loadmessages");
       socket && socket.off("new_message");
       socket && socket.off("loadcontacts");
+      socket && socket.off("show-group-user-typing");
     };
   }, []);
 
@@ -147,23 +224,39 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
       />
       <button onClick={sendMessage}>Send</button> */}
       <Box display="flex" height="99vh">
-        <Sidebar />
+        <Sidebar
+          typingUserList={typingUsersList}
+          groupTypingData={groupUserTypingState}
+        />
         <Box display="flex" flexDirection="column" flexGrow={1}>
           {selectedUserName || selectedGrpId ? (
             <>
-              <Header />
+              <Header
+                typingUserList={typingUsersList}
+                groupTypingData={groupUserTypingState}
+                type={selectedGrpId ? "group" : "solo"}
+              />
               <ChatWindow messages={messages} />
               <MessageInput
                 callbackUserTyping={(value: string) => {
                   if (socket) {
-                    const topic = selectedGrpId
+                    const selGroupStr =
+                      sessionStorage.getItem("selected-group");
+                    const selGroupObj =
+                      selGroupStr && selGroupStr !== "undefined"
+                        ? JSON.parse(selGroupStr)
+                        : {};
+
+                    const selGrpId = selGroupObj?.id;
+
+                    const topic = selGrpId
                       ? "group-user-typing"
                       : "user-typing";
                     socket.emit(topic, {
                       sender: authUserName,
                       recipient: selectedUserName,
                       content: value,
-                      groupId: selectedGrpId,
+                      groupId: selGrpId,
                       // fileUrl,
                       // fileType,
                       // fileName,

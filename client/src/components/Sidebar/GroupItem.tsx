@@ -21,6 +21,8 @@ interface Props {
   groupImage: string;
   lastMessage?: string;
   timestamp?: string;
+  groupTypingData?: any;
+  typingUserList: any;
 }
 
 const GroupItem: React.FC<Props> = ({
@@ -30,6 +32,8 @@ const GroupItem: React.FC<Props> = ({
   groupImage,
   lastMessage,
   timestamp,
+  groupTypingData,
+  typingUserList,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -40,8 +44,12 @@ const GroupItem: React.FC<Props> = ({
   const participants =
     useSelector((state: any) => state?.Common?.participants) || [];
 
-  const [typingUsersList, setTypingUsersList] = useState<any>([]);
-  const [typingUserString, setTypingUserString] = useState<any>("");
+  // const typingUsersList = groupTypingData?.typingUsersList || [];
+  // const userTypingStr = groupTypingData?.userTypingStr || "";
+  const userTypingStr = typingUserList?.join(" , ");
+  const typingGroupId = groupTypingData?.groupId || "";
+  // const [typingUsersList, setTypingUsersList] = useState<any>([]);
+  // const [typingUserString, setTypingUserString] = useState<any>("");
   // const currentSelUserStr = sessionStorage.getItem("current-selected-user");
   // const currSelUserObj =
   //   currentSelUserStr && currentSelUserStr !== "undefined"
@@ -53,37 +61,6 @@ const GroupItem: React.FC<Props> = ({
   const socket = useContext(SocketContext);
 
   const blobUrl = getBlobImageUrl(groupImage);
-
-  useEffect(() => {
-    if (socket && shouldHighlight) {
-      socket.on("show-group-user-typing", (data: any) => {
-        const typingUser: string = data?.sender;
-        let newList = cloneDeep(typingUsersList);
-        // newList = [...typingUsersList, typingUser];
-        typingUser && typingUser !== authUserName && newList?.push(typingUser);
-        const userStr = newList?.join(" ,");
-        setTypingUsersList(newList);
-        setTypingUserString(userStr);
-      });
-
-      socket.on("hide-group-user-typing", (data: any) => {
-        const typingUser: string = data?.sender;
-        let newList = cloneDeep(typingUsersList);
-        let filteredUserList = typingUsersList?.filter(
-          (user: any) => user?.username !== typingUser
-        );
-        const userStr = filteredUserList?.join(" ,");
-        setTypingUserString(userStr);
-        setTypingUsersList(filteredUserList);
-      });
-    }
-    // Clean up the socket connection when the component unmounts
-    return () => {
-      socket && socket.off("show-group-user-typing");
-      socket && socket.off("hide-group-user-typing");
-    };
-  }, []);
-
   return (
     <ContactItemContainer
       style={{
@@ -125,16 +102,16 @@ const GroupItem: React.FC<Props> = ({
       </ListItemAvatar>
       <div style={{ display: "flex", flexDirection: "column" }}>
         <ListItemText primary={name} secondary={lastMessage} />
-        {typingUsersList?.length > 0 && (
+        {typingUserList?.length > 0 && typingGroupId === _id && (
           <Typography
             style={{
               color: teal[400],
               fontWeight: 400,
             }}
           >
-            {typingUsersList?.length === 1
-              ? `${typingUserString} is typing....`
-              : `${typingUserString} are typing....`}
+            {typingUserList?.length === 1
+              ? `${userTypingStr} is typing....`
+              : `${userTypingStr} are typing....`}
           </Typography>
         )}
       </div>
