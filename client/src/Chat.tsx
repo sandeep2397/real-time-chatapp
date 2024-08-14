@@ -246,15 +246,24 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
                       selGroupStr && selGroupStr !== "undefined"
                         ? JSON.parse(selGroupStr)
                         : {};
-
                     const selGrpId = selGroupObj?.id;
+
+                    const currentSelUserStr = sessionStorage.getItem(
+                      "current-selected-user"
+                    );
+                    const currSelUserObj =
+                      currentSelUserStr && currentSelUserStr !== "undefined"
+                        ? JSON.parse(currentSelUserStr)
+                        : {};
+
+                    const selUsername = currSelUserObj?.username;
 
                     const topic = selGrpId
                       ? "group-user-typing"
                       : "user-typing";
                     socket.emit(topic, {
                       sender: authUserName,
-                      recipient: selectedUserName,
+                      recipient: selUsername,
                       content: value,
                       groupId: selGrpId,
                       // fileUrl,
