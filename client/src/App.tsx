@@ -42,7 +42,6 @@ interface Props {
 const loading = () => <div></div>;
 export const SocketContext = React.createContext<any>(null);
 export const socketEndpoint = `https://real-time-chatapp-kr2f.onrender.com`;
-
 // export const socketEndpoint = "http://localhost:4001"; // Your server's URL
 
 const App: FC<Props> = (props: Props) => {
@@ -142,6 +141,8 @@ const App: FC<Props> = (props: Props) => {
       refresedSocket.on("connect", () => {
         // sessionStorage.setItem("socketId", newSocket.id || "");
         console.log("Reconnected to server");
+        sessionStorage.removeItem("current-selected-user");
+        sessionStorage.removeItem("selected-group");
       });
       refresedSocket.emit("join", authUserName);
 
