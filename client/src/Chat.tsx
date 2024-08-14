@@ -146,7 +146,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         onChange={(e) => setMessage(e.target.value)}
       />
       <button onClick={sendMessage}>Send</button> */}
-      <Box display="flex" height="90vh">
+      <Box display="flex" height="99vh">
         <Sidebar />
         <Box display="flex" flexDirection="column" flexGrow={1}>
           {selectedUserName || selectedGrpId ? (
