@@ -1,6 +1,11 @@
-import { Avatar, ListItemAvatar, ListItemText } from "@mui/material";
+import {
+  Avatar,
+  ListItemAvatar,
+  ListItemText,
+  Typography,
+} from "@mui/material";
 import { teal } from "@mui/material/colors";
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { SocketContext } from "../../App";
 import { useGetUserName, useSelectedUserName } from "../../hooks/customHook";
@@ -28,6 +33,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
 
   const userRegex = /^\d+$/;
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
+  const [isTyping, setTyping] = useState(false);
   // const currentSelUserStr = sessionStorage.getItem("current-selected-user");
   // const currSelUserObj =
   //   currentSelUserStr && currentSelUserStr !== "undefined"
@@ -37,6 +43,27 @@ const ContactItem: React.FC<ContactItemProps> = ({
   const shouldHighlight = selectedUserName === username;
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("show-typing", (data: any) => {
+        if (data?.sender === username) {
+          setTyping(true);
+        }
+      });
+
+      socket.on("hide-typing", (data: any) => {
+        if (data?.sender === username) {
+          setTyping(false);
+        }
+      });
+    }
+    // Clean up the socket connection when the component unmounts
+    return () => {
+      socket && socket.off("show-typing");
+      socket && socket.off("hide-typing");
+    };
+  }, []);
 
   return (
     <ContactItemContainer
@@ -78,7 +105,20 @@ const ContactItem: React.FC<ContactItemProps> = ({
           src="/static/images/avatar/2.jpg"
         />
       </ListItemAvatar>
-      <ListItemText primary={preferedName} secondary={lastMessage} />
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <ListItemText primary={preferedName} secondary={lastMessage} />
+        {isTyping && (
+          <Typography
+            style={{
+              color: teal[400],
+              fontWeight: 400,
+            }}
+          >
+            {"typing...."}
+          </Typography>
+        )}
+      </div>
+
       <Timestamp>{timestamp}</Timestamp>
     </ContactItemContainer>
   );

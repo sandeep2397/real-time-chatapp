@@ -46,31 +46,6 @@ const Sidebar: React.FC = () => {
   const userRegex = /^\d+$/;
   const theme = useTheme();
 
-  // const contacts = [
-  //   {
-  //     name: "Sagya",
-  //     username: "sagar",
-  //     lastMessage: "Hey there!",
-  //     timestamp: "12:34 PM",
-  //     avatar: "/path/to/avatar.jpg",
-  //   },
-  //   {
-  //     name: "Darya",
-  //     username: "darshan",
-  //     lastMessage: "Hey there!",
-  //     timestamp: "12:34 PM",
-  //     avatar: "/path/to/avatar.jpg",
-  //   },
-  //   {
-  //     name: "Vamshi",
-  //     username: "vamshi",
-  //     lastMessage: "Hey there!",
-  //     timestamp: "12:34 PM",
-  //     avatar: "/path/to/avatar.jpg",
-  //   },
-  //   // Add more contacts
-  // ];
-
   useEffect(() => {
     if (contacts?.length > 0) {
       setBindContacts(contacts);

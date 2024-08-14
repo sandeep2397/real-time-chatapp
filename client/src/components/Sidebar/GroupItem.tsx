@@ -1,12 +1,18 @@
-import { Avatar, ListItemAvatar, ListItemText } from "@mui/material";
-import { grey } from "@mui/material/colors";
-import React, { useContext } from "react";
+import {
+  Avatar,
+  ListItemAvatar,
+  ListItemText,
+  Typography,
+} from "@mui/material";
+import { grey, teal } from "@mui/material/colors";
+import React, { useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { SocketContext } from "../../App";
 import { useGetUserName, useSelectedGroupId } from "../../hooks/customHook";
 import { selectedGroupOrPerson } from "../../redux/root_actions";
 import { getBlobImageUrl } from "../../utils/blobImageUrl";
 import { ContactItemContainer, Timestamp } from "./Sidebar.styles";
+import { cloneDeep } from "lodash";
 
 interface Props {
   name: string;
@@ -31,6 +37,11 @@ const GroupItem: React.FC<Props> = ({
 
   const userRegex = /^\d+$/;
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
+  const participants =
+    useSelector((state: any) => state?.Common?.participants) || [];
+
+  const [typingUsersList, setTypingUsersList] = useState<any>([]);
+  const [typingUserString, setTypingUserString] = useState<any>("");
   // const currentSelUserStr = sessionStorage.getItem("current-selected-user");
   // const currSelUserObj =
   //   currentSelUserStr && currentSelUserStr !== "undefined"
@@ -42,6 +53,36 @@ const GroupItem: React.FC<Props> = ({
   const socket = useContext(SocketContext);
 
   const blobUrl = getBlobImageUrl(groupImage);
+
+  useEffect(() => {
+    if (socket && shouldHighlight) {
+      socket.on("show-group-user-typing", (data: any) => {
+        const typingUser: string = data?.sender;
+        let newList = cloneDeep(typingUsersList);
+        // newList = [...typingUsersList, typingUser];
+        typingUser && typingUser !== authUserName && newList?.push(typingUser);
+        const userStr = newList?.join(" ,");
+        setTypingUsersList(newList);
+        setTypingUserString(userStr);
+      });
+
+      socket.on("hide-group-user-typing", (data: any) => {
+        const typingUser: string = data?.sender;
+        let newList = cloneDeep(typingUsersList);
+        let filteredUserList = typingUsersList?.filter(
+          (user: any) => user?.username !== typingUser
+        );
+        const userStr = filteredUserList?.join(" ,");
+        setTypingUserString(userStr);
+        setTypingUsersList(filteredUserList);
+      });
+    }
+    // Clean up the socket connection when the component unmounts
+    return () => {
+      socket && socket.off("show-group-user-typing");
+      socket && socket.off("hide-group-user-typing");
+    };
+  }, []);
 
   return (
     <ContactItemContainer
@@ -82,7 +123,21 @@ const GroupItem: React.FC<Props> = ({
           src={blobUrl}
         />
       </ListItemAvatar>
-      <ListItemText primary={name} secondary={lastMessage} />
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <ListItemText primary={name} secondary={lastMessage} />
+        {typingUsersList?.length > 0 && (
+          <Typography
+            style={{
+              color: teal[400],
+              fontWeight: 400,
+            }}
+          >
+            {typingUsersList?.length === 1
+              ? `${typingUserString} is typing....`
+              : `${typingUserString} are typing....`}
+          </Typography>
+        )}
+      </div>
       <Timestamp>{timestamp}</Timestamp>
     </ContactItemContainer>
   );

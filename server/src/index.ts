@@ -291,6 +291,28 @@ io.on('connection', async (socket) => {
     }
   });
 
+  socket.on('user-typing', async ({ sender, recipient, content }: any) => {
+    // const username = bindUserName;
+    const userList: any = (await User.find({ username: { $in: [recipient, sender] } })) || [];
+    const userSocketIDs = userList?.map((user: any) => user?.socketId);
+
+    if (content) {
+      io.to(userSocketIDs).emit('show-typing', {
+        msg: `${sender} is typing...`,
+        sender: sender,
+        recipient,
+        content,
+      });
+    } else {
+      io.to(userSocketIDs).emit('hide-typing', {
+        msg: `${sender} is typing...`,
+        sender: sender,
+        recipient,
+        content,
+      });
+    }
+  });
+
   socket.on('new-user-chat', ({ sender, recipient }: any) => {
     const username = bindUserName;
     const loadUserMessages = async () => {
@@ -377,6 +399,46 @@ io.on('connection', async (socket) => {
   );
 
   /**================== Group messages=================== */
+  socket.on('group-user-typing', async ({ sender, content, groupId }: any) => {
+    const group: any = await Group.findById(groupId);
+
+    if (group) {
+      const newGroupObjId = new mongoose.Types.ObjectId(groupId);
+      const userSocketIDs: any =
+        (await Group.aggregate()
+          .match({
+            _id: newGroupObjId,
+          })
+          .lookup({
+            from: 'users',
+            localField: 'participants.username',
+            foreignField: 'username',
+            as: 'users',
+          })
+          .project({
+            _id: 0,
+            sockets: '$users.socketId',
+          })) || [];
+
+      const socketIds = userSocketIDs?.[0]?.sockets || [];
+      if (content) {
+        io.to(socketIds).emit('show-group-user-typing', {
+          msg: `${sender} is typing...`,
+          sender: sender,
+          content,
+          groupId,
+        });
+      } else {
+        io.to(socketIds).emit('hide-group-user-typing', {
+          msg: `${sender} is typing...`,
+          sender: sender,
+          content,
+          groupId,
+        });
+      }
+    }
+  });
+
   socket.on('new-group-chat', ({ groupId }: any) => {
     const username = bindUserName;
     const loadGrpMessages = async () => {

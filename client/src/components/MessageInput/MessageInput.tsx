@@ -1,5 +1,5 @@
 import SendIcon from "@mui/icons-material/Send";
-import { FC, useState } from "react";
+import { FC, useCallback, useState } from "react";
 import {
   InputField,
   MessageInputContainer,
@@ -47,6 +47,7 @@ import FileViewer from "../fileViewer/FileViewer";
 
 type props = {
   sendMessage: any;
+  callbackUserTyping: any;
 };
 
 const BorderLinearProgress = styled(LinearProgress)(({ theme }: any) => ({
@@ -61,7 +62,10 @@ const BorderLinearProgress = styled(LinearProgress)(({ theme }: any) => ({
   },
 }));
 
-const MessageInput: FC<props> = ({ sendMessage }: props) => {
+const MessageInput: FC<props> = ({
+  sendMessage,
+  callbackUserTyping,
+}: props) => {
   const [message, setMessage] = useState("");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [mediaUrl, setMediaUrl]: any = useState("");
@@ -109,11 +113,28 @@ const MessageInput: FC<props> = ({ sendMessage }: props) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
-    // if (fileInputRef.current) {
-    //   fileInputRef.current.click();
-    // }
     setAnchorEl(null);
   };
+
+  const debounce = (func: any) => {
+    let timer: any;
+    return function (this: any, ...args: any) {
+      const context = this;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 300);
+    };
+  };
+
+  const handleEmit = (value: string) => {
+    callbackUserTyping(value);
+  };
+
+  const optimizedFn = useCallback(debounce(handleEmit), []);
 
   const handleMenuItemClick = (type: string) => {
     if (fileInputRef.current) {
@@ -125,6 +146,7 @@ const MessageInput: FC<props> = ({ sendMessage }: props) => {
   const handleEmojiClick = (event: any) => {
     // Handle emoji click
     let messageWithEmoji = message + event.emoji;
+    optimizedFn(messageWithEmoji);
     setMessage(messageWithEmoji);
   };
 
@@ -321,7 +343,10 @@ const MessageInput: FC<props> = ({ sendMessage }: props) => {
             </>
           }
           endAdornment={<></>}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+            optimizedFn(e.target.value);
+            setMessage(e.target.value);
+          }}
         />
 
         {/* <CustomInput onSend={(e: any) => setMessage(e.target.value)} /> */}
