@@ -7,6 +7,7 @@ import { GroupMsgContainer } from "./ChatWindow.styles";
 import ReactPlayer from "react-player";
 import React from "react";
 import FileViewer from "../fileViewer/FileViewer";
+import ImageViewer from "../fileViewer/ImageViewer";
 
 interface props {
   sender: string;
@@ -33,9 +34,13 @@ const GroupMessageBubble = ({
     useSelector((state: any) => state?.Common?.participants) || [];
 
   const [openModal, setModalOpen] = React.useState(false);
+  const [openImageModal, setImageModalOpen] = React.useState(false);
 
   const handleModalOpen = () => setModalOpen(true);
   const handleModalClose = () => setModalOpen(false);
+
+  const handleImageModalOpen = () => setImageModalOpen(true);
+  const handleImageModalClose = () => setImageModalOpen(false);
   // const savedColor: string = _.result(
   //   _.find(participants, (userData: any) => {
   //     return userData?.username === sender;
@@ -109,6 +114,9 @@ const GroupMessageBubble = ({
               height="120px"
               width={"200px"}
               alt="Image"
+              onClick={() => {
+                handleImageModalOpen();
+              }}
               style={{ padding: "8px" }}
             />
           ) : fileUrl ? (
@@ -146,6 +154,16 @@ const GroupMessageBubble = ({
           open={openModal}
           handleOpen={handleModalOpen}
           handleClose={handleModalClose}
+          fileType={fileType}
+          fileUrl={fileUrl}
+        />
+      )}
+
+      {openImageModal && (
+        <ImageViewer
+          open={openImageModal}
+          handleOpen={handleImageModalOpen}
+          handleClose={handleImageModalClose}
           fileType={fileType}
           fileUrl={fileUrl}
         />

@@ -4,6 +4,7 @@ import { useGetUserName } from "../../hooks/customHook";
 import { MessageBubble as BubbleContainer } from "./ChatWindow.styles";
 import ReactPlayer from "react-player";
 import FileViewer from "../fileViewer/FileViewer";
+import ImageViewer from "../fileViewer/ImageViewer";
 
 interface MessageBubbleProps {
   sender: string;
@@ -25,9 +26,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const username = useGetUserName();
   const [openModal, setModalOpen] = React.useState(false);
+  const [openImageModal, setImageModalOpen] = React.useState(false);
 
   const handleModalOpen = () => setModalOpen(true);
   const handleModalClose = () => setModalOpen(false);
+
+  const handleImageModalOpen = () => setImageModalOpen(true);
+  const handleImageModalClose = () => setImageModalOpen(false);
 
   return (
     <>
@@ -69,6 +74,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               height="120px"
               width={"200px"}
               alt="Image"
+              onClick={() => {
+                handleImageModalOpen();
+              }}
               style={{ padding: "8px" }}
             />
           ) : fileUrl ? (
@@ -99,6 +107,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           open={openModal}
           handleOpen={handleModalOpen}
           handleClose={handleModalClose}
+          fileType={fileType}
+          fileUrl={fileUrl}
+        />
+      )}
+      {openImageModal && (
+        <ImageViewer
+          open={openImageModal}
+          handleOpen={handleImageModalOpen}
+          handleClose={handleImageModalClose}
           fileType={fileType}
           fileUrl={fileUrl}
         />
