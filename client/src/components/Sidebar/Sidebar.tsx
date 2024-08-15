@@ -30,9 +30,16 @@ import {
 interface props {
   groupTypingData: any;
   typingUserList: any;
+  newMessages?: Array<any>;
+  notifyChatData?: any;
 }
 
-const Sidebar: FC<props> = ({ groupTypingData, typingUserList }: props) => {
+const Sidebar: FC<props> = ({
+  groupTypingData,
+  typingUserList,
+  newMessages,
+  notifyChatData,
+}: props) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -151,7 +158,12 @@ const Sidebar: FC<props> = ({ groupTypingData, typingUserList }: props) => {
         ))}
         {bindContacts?.map((contact: any, index: any) => (
           <>
-            <ContactItem key={index} {...contact} />
+            <ContactItem
+              newMessages={newMessages}
+              notifyChatData={notifyChatData}
+              key={index}
+              {...contact}
+            />
             <Divider variant="middle" style={{ margin: "0px 16px" }} />
           </>
         ))}

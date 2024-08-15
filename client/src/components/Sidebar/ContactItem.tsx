@@ -18,6 +18,8 @@ interface ContactItemProps {
   lastMessage: string;
   timestamp: string;
   avatar: string;
+  newMessages?: Array<any>;
+  notifyChatData?: any;
 }
 
 const ContactItem: React.FC<ContactItemProps> = ({
@@ -26,6 +28,8 @@ const ContactItem: React.FC<ContactItemProps> = ({
   lastMessage,
   timestamp,
   avatar,
+  notifyChatData,
+  newMessages,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -40,7 +44,10 @@ const ContactItem: React.FC<ContactItemProps> = ({
   //     ? JSON.parse(currentSelUserStr)
   //     : {};
 
-  const shouldHighlight = selectedUserName === username;
+  const rowUserRecvdMsgs = newMessages?.filter((data: any) => {
+    return data?.sender === username;
+  });
+  const currChattingUser = selectedUserName === username;
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
 
@@ -68,7 +75,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
   return (
     <ContactItemContainer
       style={{
-        backgroundColor: shouldHighlight ? `#88dabc` : "#fff",
+        backgroundColor: currChattingUser ? `#88dabc` : "#fff",
       }}
       onClick={() => {
         if (socket) {
@@ -120,6 +127,24 @@ const ContactItem: React.FC<ContactItemProps> = ({
       </div>
 
       <Timestamp>{timestamp}</Timestamp>
+      {Array.isArray(rowUserRecvdMsgs) &&
+        rowUserRecvdMsgs?.length > 0 &&
+        !currChattingUser && (
+          // notifyChatData?.recipient === username &&
+          <div
+            style={{
+              height: "25px",
+              width: "25px",
+              background: "#25d366",
+              borderRadius: "50%",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ color: "#fff", lineHeight: 1.6, fontSize: "14px" }}>
+              {rowUserRecvdMsgs?.length}
+            </span>
+          </div>
+        )}
     </ContactItemContainer>
   );
 };

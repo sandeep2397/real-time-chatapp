@@ -51,6 +51,8 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   // const [typingUserString, setTypingUserString] = useState<any>("");
 
   const [groupUserTypingState, setGroupUserTypingState] = useState<any>({});
+  const [notifyChatData, setNotifyUserOrGroup] = useState<any>({});
+  const [newMessages, setNewMessages] = useState<Record<string, any>[]>([]);
 
   useEffect(() => {
     if (refreshedMsgs && refreshedMsgs?.length > 0) {
@@ -69,6 +71,21 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
 
     if (socket) {
       socket.on("loadmessages", (msgData: any) => {
+        const currentSelUserStr = sessionStorage.getItem(
+          "current-selected-user"
+        );
+        const currSelUserObj =
+          currentSelUserStr && currentSelUserStr !== "undefined"
+            ? JSON.parse(currentSelUserStr)
+            : {};
+        setNewMessages((prevNewMsgs) => {
+          const filteredMsgs = prevNewMsgs?.filter(
+            (msgInfo: any) => msgInfo?.sender !== currSelUserObj?.username
+          );
+          // Return the updated list without adding the typingUser if it's the authUserName
+          return filteredMsgs;
+          // return [...prevNewMsgs, msgData]
+        });
         setMessages(msgData);
       });
 
@@ -105,6 +122,20 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
           currentSelUserStr && currentSelUserStr !== "undefined"
             ? JSON.parse(currentSelUserStr)
             : {};
+
+        setNotifyUserOrGroup({
+          recipient: msgData?.sender,
+        });
+
+        setNewMessages((prevNewMsgs) => {
+          const concatedMsgs = [...prevNewMsgs, msgData];
+          const filteredMsgs = concatedMsgs?.filter(
+            (msgInfo: any) => msgInfo?.sender !== authUserName
+          );
+          // Return the updated list without adding the typingUser if it's the authUserName
+          return filteredMsgs;
+          // return [...prevNewMsgs, msgData]
+        });
         if (
           msgData?.sender === currSelUserObj?.username ||
           msgData?.recipient === currSelUserObj?.username
@@ -223,10 +254,12 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         onChange={(e) => setMessage(e.target.value)}
       />
       <button onClick={sendMessage}>Send</button> */}
-      <Box display="flex" height="99vh">
+      <Box display="flex" height="97vh">
         <Sidebar
           typingUserList={typingUsersList}
           groupTypingData={groupUserTypingState}
+          notifyChatData={notifyChatData}
+          newMessages={newMessages}
         />
         <Box display="flex" flexDirection="column" flexGrow={1}>
           {selectedUserName || selectedGrpId ? (
@@ -298,6 +331,19 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
                         });
                         dispatch(selectedGroupOrPerson(selectedUser));
                       }
+
+                      const topic = selectedGrpId
+                        ? "group-user-typing"
+                        : "user-typing";
+                      socket.emit(topic, {
+                        sender: authUserName,
+                        recipient: selectedUserName,
+                        content: "",
+                        groupId: selectedGrpId,
+                        // fileUrl,
+                        // fileType,
+                        // fileName,
+                      });
                     }
                   }
                 }}
