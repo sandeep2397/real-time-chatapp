@@ -433,7 +433,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
       {breakpoint === 2 && <div>Desktop View</div>}
       {breakpoint === 3 && <div>Large View</div>} */}
       <div className="box">
-        <Box display="flex" height="97vh">
+        <Box display="flex" height="92vh" style={{ marginBottom: "16px" }}>
           {!fullScreenChat && (
             <Sidebar
               typingUserList={typingUsersList}
