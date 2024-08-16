@@ -26,20 +26,29 @@ import {
   SidebarContainer,
   SidebarHeader,
 } from "./Sidebar.styles";
+import _ from "lodash";
 
 interface props {
   groupTypingData: any;
   typingUserList: any;
+  duoUsersTypingData: String[];
   newMessages?: Array<any>;
+  newGroupMessages?: Array<any>;
   notifyChatData?: any;
+  saveContactsAndGroups: Array<any>;
+  notifyCount: number;
 }
 
 const Sidebar: FC<props> = ({
   groupTypingData,
   typingUserList,
+  duoUsersTypingData,
   newMessages,
+  newGroupMessages,
   notifyChatData,
-}: props) => {
+  notifyCount,
+}: // saveContactsAndGroups,
+props) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -48,10 +57,14 @@ const Sidebar: FC<props> = ({
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const [message, setMessage] = useState("");
   // const [contacts, setContacts] = useState<any>([]);
-  const contacts = useSelector((state: any) => state?.Common?.contacts);
-  const groups = useSelector((state: any) => state?.Common?.groups);
 
-  const [bindContacts, setBindContacts] = useState<any>(contacts);
+  const data = notifyCount;
+  const sortedGroupsAndContacts = useSelector(
+    (state: any) => state?.Common?.sortedGroupsAndContacts
+  );
+  const [bindContactsAndGroups, setBindContactsGroups] = useState<any>(
+    sortedGroupsAndContacts
+  );
   const [search, setSearch]: any = useState("");
 
   const [username, setUsername] = useState("");
@@ -59,10 +72,10 @@ const Sidebar: FC<props> = ({
   const theme = useTheme();
 
   useEffect(() => {
-    if (contacts?.length > 0) {
-      setBindContacts(contacts);
+    if (sortedGroupsAndContacts?.length > 0) {
+      setBindContactsGroups(sortedGroupsAndContacts);
     }
-  }, [contacts]);
+  }, [sortedGroupsAndContacts]);
 
   const debounce = (func: any) => {
     let timer: any;
@@ -99,8 +112,17 @@ const Sidebar: FC<props> = ({
           dataType: "string",
         },
       },
+
+      name: {
+        id: "$.name",
+        locale: "name",
+        cell: {
+          type: "text",
+          dataType: "string",
+        },
+      },
     };
-    const filteredList = contacts?.filter((row: any) => {
+    const filteredList = sortedGroupsAndContacts?.filter((row: any) => {
       for (let columnInfo of defCols) {
         let derivedPath: string = listPath?.[columnInfo]?.id || "";
         if (derivedPath.indexOf("$.") !== -1) {
@@ -127,9 +149,11 @@ const Sidebar: FC<props> = ({
         }
       }
     });
-    setBindContacts(filteredList);
+    setBindContactsGroups(filteredList);
   };
   const optimizedFn = useCallback(debounce(handleFilter), []);
+
+  console.log("bindContactsAndGroups=======>", bindContactsAndGroups);
 
   return (
     <SidebarContainer>
@@ -145,28 +169,34 @@ const Sidebar: FC<props> = ({
         />
       </SidebarHeader>
       <ContactsList>
-        {groups?.map((contact: any, index: any) => (
-          <>
-            <GroupItem
-              key={index}
-              groupTypingData={groupTypingData}
-              typingUserList={typingUserList}
-              {...contact}
-            />
-            <Divider variant="middle" style={{ margin: "0px 16px" }} />
-          </>
-        ))}
-        {bindContacts?.map((contact: any, index: any) => (
-          <>
-            <ContactItem
-              newMessages={newMessages}
-              notifyChatData={notifyChatData}
-              key={index}
-              {...contact}
-            />
-            <Divider variant="middle" style={{ margin: "0px 16px" }} />
-          </>
-        ))}
+        {sortedGroupsAndContacts &&
+          sortedGroupsAndContacts?.map((rowInfo: any, index: number) => {
+            const isGroup = rowInfo?._id;
+
+            return isGroup ? (
+              <>
+                <GroupItem
+                  key={index}
+                  groupTypingData={groupTypingData}
+                  newGroupMessages={newGroupMessages}
+                  typingUserList={typingUserList}
+                  {...rowInfo}
+                />
+                <Divider variant="middle" style={{ margin: "0px 16px" }} />
+              </>
+            ) : (
+              <>
+                <ContactItem
+                  newMessages={newMessages}
+                  notifyChatData={notifyChatData}
+                  duoUsersTypingData={duoUsersTypingData}
+                  key={index}
+                  {...rowInfo}
+                />
+                <Divider variant="middle" style={{ margin: "0px 16px" }} />
+              </>
+            );
+          })}
       </ContactsList>
       <ContactItemContainer>
         <ListItemAvatar>

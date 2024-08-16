@@ -25,6 +25,7 @@ import {
   saveContacts,
   saveGroupParticipants,
   selectedGroupOrPerson,
+  storeSortGroupsAndContacts,
 } from "./redux/root_actions";
 import { cloneDeep } from "lodash";
 import _ from "lodash";
@@ -37,6 +38,9 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
   const [messages, setMessages] = useState<Record<string, any>[]>([]);
+  const contacts = useSelector((state: any) => state?.Common?.contacts);
+  const groups = useSelector((state: any) => state?.Common?.groups);
+
   //   const [socket, setSocket] = useState<any>(null);
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
   const participants =
@@ -47,22 +51,101 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   const selectedGrpId = useSelectedGroupId();
   const selectedUserName = useSelectedUserName();
 
-  const [typingUsersList, setTypingUsersList] = useState<any>([]);
+  const [typingUsersList, setTypingUsersList] = useState<Array<any>>([]);
+  const [duoUsersTypingData, setDuoUsersTypingData] = useState<string[]>([]);
   // const [typingUserString, setTypingUserString] = useState<any>("");
+  const [notifyCount, setNotifyCount] = useState<any>(0);
+  const [saveContactsAndGroups, setContactsAndGroups] = useState<Array<any>>([
+    ...(groups || []),
+    ...(contacts || []),
+  ]);
 
   const [groupUserTypingState, setGroupUserTypingState] = useState<any>({});
   const [notifyChatData, setNotifyUserOrGroup] = useState<any>({});
   const [newMessages, setNewMessages] = useState<Record<string, any>[]>([]);
+  const [newGroupMessages, setNewGroupMessages] = useState<
+    Record<string, any>[]
+  >([]);
 
   useEffect(() => {
     if (refreshedMsgs && refreshedMsgs?.length > 0) {
       setMessages(refreshedMsgs);
+      setContactsAndGroups([...(groups || []), ...(contacts || [])]);
+      dispatch(
+        storeSortGroupsAndContacts([...(groups || []), ...(contacts || [])])
+      );
     }
   }, [refreshedMsgs]);
 
   useEffect(() => {
-    // Initialize Socket.io connection
-    // load all prev mesgs
+    if (contacts?.length > 0 || groups?.length > 0) {
+      setContactsAndGroups([...(groups || []), ...(contacts || [])]);
+      dispatch(
+        storeSortGroupsAndContacts([...(groups || []), ...(contacts || [])])
+      );
+    }
+  }, [groups, contacts]);
+
+  const sortGroupsAndContacts = (newMgs: Array<any>) => {
+    const sortedData = saveContactsAndGroups?.sort((a: any, b: any) => {
+      const aList: any =
+        newMgs?.filter((msgData: any) => {
+          const isGroup = msgData?.groupId;
+          if (
+            isGroup
+              ? msgData?.groupId === a?.["_id"]
+              : msgData?.sender === a?.["username"]
+          ) {
+            return msgData;
+          }
+        }) || [];
+      const aUserData = aList?.length > 0 ? aList?.[aList?.length - 1] : {};
+
+      const bList: any = newMgs?.filter((msgData: any) => {
+        const isGroup = msgData?.groupId;
+        if (
+          isGroup
+            ? msgData?.groupId === b?.["_id"]
+            : msgData?.sender === b?.["username"]
+        ) {
+          return msgData;
+        }
+      });
+      const bUserData = bList?.length > 0 ? bList?.[bList?.length - 1] : {};
+
+      if (
+        (aUserData?.["uiTimeStamp"] ?? 0) > (bUserData?.["uiTimeStamp"] ?? 0)
+      ) {
+        return -1;
+      } else {
+        return 1;
+      }
+    });
+
+    return sortedData;
+  };
+
+  useEffect(() => {
+    if (newMessages?.length > 0) {
+      const sortedContactsAndGrps = sortGroupsAndContacts(newMessages ?? []);
+      setContactsAndGroups(sortedContactsAndGrps);
+      dispatch(storeSortGroupsAndContacts(sortedContactsAndGrps));
+      setNotifyCount((prvCount: number) => prvCount + 1);
+    }
+  }, [newMessages]);
+
+  useEffect(() => {
+    if (newGroupMessages?.length > 0) {
+      const sortedContactsAndGrps = sortGroupsAndContacts(
+        newGroupMessages ?? []
+      );
+      setContactsAndGroups(sortedContactsAndGrps);
+      dispatch(storeSortGroupsAndContacts(sortedContactsAndGrps));
+      setNotifyCount((prvCount: number) => prvCount + 1);
+    }
+  }, [newGroupMessages]);
+
+  const duoChattingContext = () => {
     const socketStr = sessionStorage.getItem("socket");
     const savedSocket =
       socketStr && socketStr !== "undefined"
@@ -89,29 +172,6 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         setMessages(msgData);
       });
 
-      socket.on("load-group-messages", (groupData: any) => {
-        const colors: any = {
-          color0: yellow[700],
-          color1: red[400],
-          color2: blue[400],
-          color3: orange[400],
-          color4: purple[400],
-          color5: lightGreen[400],
-          color6: pink[400],
-          color7: yellow[400],
-        };
-        const saveParticipants = groupData?.participants?.map(
-          (data: any, index: number) => {
-            return {
-              ...data,
-              color: colors?.[`color${index}`] || "#434343",
-            };
-          }
-        );
-        dispatch(saveGroupParticipants(saveParticipants));
-        setMessages(groupData?.messages);
-      });
-
       // Listen for new messages
       socket.on("new_message", (msgData: any) => {
         console.log("Mesgss====>", msgData);
@@ -132,10 +192,10 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
           const filteredMsgs = concatedMsgs?.filter(
             (msgInfo: any) => msgInfo?.sender !== authUserName
           );
-          // Return the updated list without adding the typingUser if it's the authUserName
           return filteredMsgs;
           // return [...prevNewMsgs, msgData]
         });
+
         if (
           msgData?.sender === currSelUserObj?.username ||
           msgData?.recipient === currSelUserObj?.username
@@ -146,7 +206,79 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         }
       });
 
+      socket.on("show-typing", (data: any) => {
+        setDuoUsersTypingData((prevUsers: any) => {
+          if (prevUsers?.includes(data?.sender)) {
+            return prevUsers;
+          }
+          return [...prevUsers, data?.sender];
+        });
+      });
+
+      socket.on("hide-typing", (data: any) => {
+        setDuoUsersTypingData((prevUsers: any) => {
+          const filteredUsers = prevUsers?.filter(
+            (username: any) => username !== data?.sender
+          );
+          // Return the updated list without adding the typingUser if it's the authUserName
+          return filteredUsers;
+        });
+      });
+
       // new group msgs
+    }
+  };
+
+  const groupChattingContext = () => {
+    /** --------Group chatting topics---------- */
+    const socketStr = sessionStorage.getItem("socket");
+    const savedSocket =
+      socketStr && socketStr !== "undefined"
+        ? JSON.parse(sessionStorage.getItem("socket") || "")
+        : null;
+
+    if (socket) {
+      socket.on("load-group-messages", (groupData: any) => {
+        const selGroupStr = sessionStorage.getItem("selected-group");
+        const selGroupObj =
+          selGroupStr && selGroupStr !== "undefined"
+            ? JSON.parse(selGroupStr)
+            : {};
+
+        const selGrpId = selGroupObj?.id;
+
+        const colors: any = {
+          color0: yellow[700],
+          color1: red[400],
+          color2: blue[400],
+          color3: orange[400],
+          color4: purple[400],
+          color5: lightGreen[400],
+          color6: pink[400],
+          color7: yellow[400],
+        };
+        const saveParticipants = groupData?.participants?.map(
+          (data: any, index: number) => {
+            return {
+              ...data,
+              color: colors?.[`color${index}`] || "#434343",
+            };
+          }
+        );
+        dispatch(saveGroupParticipants(saveParticipants));
+
+        setNewGroupMessages((prevNewMsgs) => {
+          const filteredMsgs = prevNewMsgs?.filter(
+            (msgInfo: any) => msgInfo?.groupId !== selGrpId
+          );
+          // Return the updated list without adding the typingUser if it's the authUserName
+          return filteredMsgs;
+          // return [...prevNewMsgs, msgData]
+        });
+
+        setMessages(groupData?.messages);
+      });
+
       socket.on("new_group_message", (msgData: any) => {
         console.log("Grp Mesgss====>", msgData);
         const selGroupStr = sessionStorage.getItem("selected-group");
@@ -156,88 +288,112 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
             : {};
 
         const selGrpId = selGroupObj?.id;
+
+        const currentSelUserStr = sessionStorage.getItem(
+          "current-selected-user"
+        );
+        const currSelUserObj =
+          currentSelUserStr && currentSelUserStr !== "undefined"
+            ? JSON.parse(currentSelUserStr)
+            : {};
+
+        setNotifyUserOrGroup({
+          recipient: msgData?.sender,
+        });
+
+        setNewGroupMessages((prevNewMsgs) => {
+          const concatedMsgs = [...prevNewMsgs, msgData];
+          const filteredMsgs = concatedMsgs?.filter(
+            (msgInfo: any) => msgInfo?.sender !== authUserName
+          );
+          return filteredMsgs;
+        });
+
         if (msgData?.groupId === selGrpId) {
           let newMsg = [msgData];
           // setMessages([...messages, ...newMsg]);
           setMessages((prevMessages) => [...prevMessages, msgData]);
         }
       });
+
+      socket.on("show-group-user-typing", (data: any) => {
+        const typingUser: string = data?.sender;
+        const derivedUser: any = _.find(participants, (userData: any) => {
+          return userData?.username === typingUser;
+        });
+        const prefName = derivedUser?.preferedName || typingUser;
+        const msg = `${prefName} is typing...`;
+
+        setTypingUsersList((prevUsers: Array<string>) => {
+          if (!prevUsers?.includes(typingUser) && typingUser !== authUserName) {
+            return [...prevUsers, typingUser];
+          }
+          return prevUsers;
+        });
+
+        let typingUsersList = groupUserTypingState?.typingUsersList || [];
+        let newList = cloneDeep(typingUsersList);
+        // newList = [...typingUsersList, typingUser];
+        newList = typingUser && typingUser !== authUserName ? [typingUser] : [];
+        // typingUser && typingUser !== authUserName && newList?.push(typingUser);
+
+        const userTypingStr = newList?.join(" ,");
+
+        setGroupUserTypingState({
+          groupId: data?.groupId,
+          message: msg,
+          typingUsersList: newList,
+          userTypingStr,
+        });
+      });
+
+      socket.on("hide-group-user-typing", (data: any) => {
+        const typingUser: string = data?.sender;
+        // let typingUsersList = groupUserTypingState?.typingUsersList || [];
+        let filteredUserList = typingUsersList?.filter(
+          (user: any) => user?.username !== typingUser
+        );
+        const userTypingStr = filteredUserList?.join(" ,");
+
+        setTypingUsersList((prevUsers: Array<string>) => {
+          const updatedUsers = prevUsers.filter((user) => user !== typingUser);
+          return updatedUsers;
+        });
+
+        setGroupUserTypingState({
+          groupId: data?.groupId,
+          // message: msg,
+          typingUsersList: filteredUserList,
+          userTypingStr,
+        });
+      });
     }
+  };
 
-    socket.on("show-group-user-typing", (data: any) => {
-      const typingUser: string = data?.sender;
-      const derivedUser: any = _.find(participants, (userData: any) => {
-        return userData?.username === typingUser;
-      });
-      const prefName = derivedUser?.preferedName || typingUser;
-      const msg = `${prefName} is typing...`;
+  useEffect(() => {
+    // Initialize Socket.io connection
 
-      setTypingUsersList((prevUsers: Array<string>) => {
-        if (!prevUsers?.includes(typingUser) && typingUser !== authUserName) {
-          return [...prevUsers, typingUser];
-        }
-        return prevUsers;
-      });
+    //save contacts and groups
+    setContactsAndGroups([...(groups || []), ...(contacts || [])]);
 
-      let typingUsersList = groupUserTypingState?.typingUsersList || [];
-      let newList = cloneDeep(typingUsersList);
-      // newList = [...typingUsersList, typingUser];
-      newList = typingUser && typingUser !== authUserName ? [typingUser] : [];
-      // typingUser && typingUser !== authUserName && newList?.push(typingUser);
+    // duo chat context
+    duoChattingContext();
 
-      const userTypingStr = newList?.join(" ,");
-
-      setGroupUserTypingState({
-        groupId: data?.groupId,
-        message: msg,
-        typingUsersList: newList,
-        userTypingStr,
-      });
-    });
-
-    socket.on("hide-group-user-typing", (data: any) => {
-      const typingUser: string = data?.sender;
-      // let typingUsersList = groupUserTypingState?.typingUsersList || [];
-      let filteredUserList = typingUsersList?.filter(
-        (user: any) => user?.username !== typingUser
-      );
-      const userTypingStr = filteredUserList?.join(" ,");
-
-      setTypingUsersList((prevUsers: Array<string>) => {
-        // Filter out the typingUser if it's already in the list
-        const updatedUsers = prevUsers.filter((user) => user !== typingUser);
-        // Return the updated list without adding the typingUser if it's the authUserName
-        return updatedUsers;
-      });
-
-      setGroupUserTypingState({
-        groupId: data?.groupId,
-        // message: msg,
-        typingUsersList: filteredUserList,
-        userTypingStr,
-      });
-    });
-
-    /** Between 2 user chats */
-    // socket.on("show-typing", (data: any) => {
-    //   if (data?.sender === username) {
-    //     setTyping(true);
-    //   }
-    // });
-
-    // socket.on("hide-typing", (data: any) => {
-    //   if (data?.sender === username) {
-    //     setTyping(false);
-    //   }
-    // });
+    // Group chat context
+    groupChattingContext();
 
     // Clean up the socket connection when the component unmounts
     return () => {
       dispatch(saveContacts([]));
       socket && socket.off("loadmessages");
+      socket && socket.off("load-group-messages");
       socket && socket.off("new_message");
+      socket && socket.off("new_group_message");
       socket && socket.off("loadcontacts");
       socket && socket.off("show-group-user-typing");
+      socket && socket.off("hide-group-user-typing");
+      socket && socket.off("show-typing");
+      socket && socket.off("hide-typing");
     };
   }, []);
 
@@ -260,6 +416,10 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
           groupTypingData={groupUserTypingState}
           notifyChatData={notifyChatData}
           newMessages={newMessages}
+          duoUsersTypingData={duoUsersTypingData}
+          newGroupMessages={newGroupMessages}
+          saveContactsAndGroups={saveContactsAndGroups}
+          notifyCount={notifyCount}
         />
         <Box display="flex" flexDirection="column" flexGrow={1}>
           {selectedUserName || selectedGrpId ? (
@@ -267,6 +427,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
               <Header
                 typingUserList={typingUsersList}
                 groupTypingData={groupUserTypingState}
+                duoUsersTypingData={duoUsersTypingData}
                 type={selectedGrpId ? "group" : "solo"}
               />
               <ChatWindow messages={messages} />

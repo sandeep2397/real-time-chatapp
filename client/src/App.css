@@ -43,3 +43,30 @@
   /* margin: 32px; */
   background-image: url("./assets/wallpaper.jpg");
 }
+
+.group-item {
+  transition: transform 0.3s ease-in-out;
+  position: relative;
+}
+
+.group-item-enter {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+.group-item-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.group-item-exit {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.group-item-exit-active {
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}

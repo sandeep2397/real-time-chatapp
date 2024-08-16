@@ -13,6 +13,7 @@ import { selectedGroupOrPerson } from "../../redux/root_actions";
 import { getBlobImageUrl } from "../../utils/blobImageUrl";
 import { ContactItemContainer, Timestamp } from "./Sidebar.styles";
 import { cloneDeep } from "lodash";
+import "../../App.css";
 
 interface Props {
   name: string;
@@ -23,6 +24,7 @@ interface Props {
   timestamp?: string;
   groupTypingData?: any;
   typingUserList: any;
+  newGroupMessages?: Array<any>;
 }
 
 const GroupItem: React.FC<Props> = ({
@@ -34,6 +36,7 @@ const GroupItem: React.FC<Props> = ({
   timestamp,
   groupTypingData,
   typingUserList,
+  newGroupMessages,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -56,9 +59,14 @@ const GroupItem: React.FC<Props> = ({
   //     ? JSON.parse(currentSelUserStr)
   //     : {};
 
+  const rowUserRecvdMsgs = newGroupMessages?.filter((data: any) => {
+    return data?.groupId === _id;
+  });
+
   const shouldHighlight = selectedGrpId === _id;
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
+  // const shouldShowNotification = selectedUserName === authUserName;
 
   const blobUrl = getBlobImageUrl(groupImage);
   return (
@@ -116,6 +124,23 @@ const GroupItem: React.FC<Props> = ({
         )}
       </div>
       <Timestamp>{timestamp}</Timestamp>
+      {Array.isArray(rowUserRecvdMsgs) && rowUserRecvdMsgs?.length > 0 && (
+        // !currChattingUser &&
+        // notifyChatData?.recipient === username &&
+        <div
+          style={{
+            height: "25px",
+            width: "25px",
+            background: "#25d366",
+            borderRadius: "50%",
+            textAlign: "center",
+          }}
+        >
+          <span style={{ color: "#fff", lineHeight: 1.6, fontSize: "14px" }}>
+            {rowUserRecvdMsgs?.length}
+          </span>
+        </div>
+      )}
     </ContactItemContainer>
   );
 };

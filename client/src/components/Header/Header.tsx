@@ -17,12 +17,14 @@ interface props {
   type: "group" | "solo";
   groupTypingData: any;
   typingUserList: any;
+  duoUsersTypingData: string[];
 }
 
 const Header: FC<props> = ({
   type,
   groupTypingData,
   typingUserList,
+  duoUsersTypingData,
 }: props) => {
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
   const selectedGrpId = useSelectedGroupId();
@@ -38,46 +40,7 @@ const Header: FC<props> = ({
 
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
-  const [isTyping, setTyping] = useState(false);
-
-  useEffect(() => {
-    if (socket) {
-      setTyping(false);
-
-      socket.on("show-typing", (data: any) => {
-        const currentSelUserStr = sessionStorage.getItem(
-          "current-selected-user"
-        );
-        const currSelUserObj =
-          currentSelUserStr && currentSelUserStr !== "undefined"
-            ? JSON.parse(currentSelUserStr)
-            : {};
-        if (data?.sender === currSelUserObj?.username) {
-          setTyping(true);
-        } else {
-          setTyping(false);
-        }
-      });
-
-      socket.on("hide-typing", (data: any) => {
-        const currentSelUserStr = sessionStorage.getItem(
-          "current-selected-user"
-        );
-        const currSelUserObj =
-          currentSelUserStr && currentSelUserStr !== "undefined"
-            ? JSON.parse(currentSelUserStr)
-            : {};
-        if (data?.sender === currSelUserObj?.username) {
-          setTyping(false);
-        }
-      });
-    }
-    // Clean up the socket connection when the component unmounts
-    return () => {
-      socket && socket.off("show--typing");
-      socket && socket.off("hide-typing");
-    };
-  }, []);
+  const isTyping = duoUsersTypingData?.includes(selectedUserName);
 
   const blobUrl = getBlobImageUrl(selectedUser?.image);
   return (

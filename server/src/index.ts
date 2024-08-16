@@ -370,6 +370,7 @@ io.on('connection', async (socket) => {
       io.to(userSocketIDs).emit('new_message', {
         sender: sessionUsername,
         timestamp: convertedDateString,
+        uiTimeStamp: Date.now(),
         recipient,
         content,
       });
@@ -528,6 +529,7 @@ io.on('connection', async (socket) => {
           io.to(userSocketIDs?.[0]?.sockets).emit('new_group_message', {
             sender: sessionUsername,
             timestamp: convertedDateString,
+            uiTimeStamp: Date.now(),
             content,
             groupId,
           });

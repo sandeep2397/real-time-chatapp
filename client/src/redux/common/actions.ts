@@ -16,6 +16,7 @@ import {
   SET_FIELDS_JSON,
   SET_FIELDS_STATE,
   SET_STEPPER_STATE,
+  SORTED_GROUPS_CONTACTS,
   TOGGLE_SESSION_PROMPT,
   TOGGLE_SNACKBAR,
 } from "../../constants/actionTypes";
@@ -85,5 +86,9 @@ export const saveGroups = (data: any): CommonAction => ({
 });
 export const saveGroupParticipants = (data: any): CommonAction => ({
   type: SAVE_PER_GROUP_USERS,
+  payload: data,
+});
+export const storeSortGroupsAndContacts = (data: any): CommonAction => ({
+  type: SORTED_GROUPS_CONTACTS,
   payload: data,
 });

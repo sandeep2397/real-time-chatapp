@@ -20,6 +20,7 @@ interface ContactItemProps {
   avatar: string;
   newMessages?: Array<any>;
   notifyChatData?: any;
+  duoUsersTypingData?: string[];
 }
 
 const ContactItem: React.FC<ContactItemProps> = ({
@@ -30,6 +31,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
   avatar,
   notifyChatData,
   newMessages,
+  duoUsersTypingData,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -37,7 +39,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
 
   const userRegex = /^\d+$/;
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
-  const [isTyping, setTyping] = useState(false);
+  // const [isTyping, setTyping] = useState(false);
   // const currentSelUserStr = sessionStorage.getItem("current-selected-user");
   // const currSelUserObj =
   //   currentSelUserStr && currentSelUserStr !== "undefined"
@@ -48,29 +50,10 @@ const ContactItem: React.FC<ContactItemProps> = ({
     return data?.sender === username;
   });
   const currChattingUser = selectedUserName === username;
+  const isTyping = duoUsersTypingData?.includes(username);
+
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
-
-  useEffect(() => {
-    if (socket) {
-      socket.on("show-typing", (data: any) => {
-        if (data?.sender === username) {
-          setTyping(true);
-        }
-      });
-
-      socket.on("hide-typing", (data: any) => {
-        if (data?.sender === username) {
-          setTyping(false);
-        }
-      });
-    }
-    // Clean up the socket connection when the component unmounts
-    return () => {
-      socket && socket.off("show-typing");
-      socket && socket.off("hide-typing");
-    };
-  }, []);
 
   return (
     <ContactItemContainer

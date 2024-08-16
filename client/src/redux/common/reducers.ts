@@ -19,6 +19,7 @@ import {
   SET_STEPPER_STATE,
   TOGGLE_SESSION_PROMPT,
   TOGGLE_SNACKBAR,
+  SORTED_GROUPS_CONTACTS,
 } from "../../constants/actionTypes";
 
 interface Snackbar {
@@ -44,6 +45,7 @@ type State = {
   contacts: Array<any>;
   groups: Array<any>;
   participants: Array<any>;
+  sortedGroupsAndContacts: Array<any>;
 };
 
 const INIT_STATE = {
@@ -70,6 +72,7 @@ const INIT_STATE = {
   },
   cachedMediaData: [],
   participants: [],
+  sortedGroupsAndContacts: [],
 };
 
 const Common = (state: State = INIT_STATE, action: CommonAction) => {
@@ -106,6 +109,8 @@ const Common = (state: State = INIT_STATE, action: CommonAction) => {
       return { ...state, groups: action.payload };
     case SAVE_PER_GROUP_USERS:
       return { ...state, participants: action.payload };
+    case SORTED_GROUPS_CONTACTS:
+      return { ...state, sortedGroupsAndContacts: action.payload };
     default:
       return { ...state };
   }
