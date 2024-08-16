@@ -69,11 +69,25 @@ const GroupItem: React.FC<Props> = ({
   // const shouldShowNotification = selectedUserName === authUserName;
 
   const blobUrl = getBlobImageUrl(groupImage);
+
+  const [className, setClassName] = useState("group-item");
+
+  useEffect(() => {
+    setClassName("group-item group-item-enter");
+
+    const timer = setTimeout(() => {
+      setClassName("group-item");
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [_id]);
+
   return (
     <ContactItemContainer
       style={{
         backgroundColor: shouldHighlight ? `#88dabc` : "#fff",
       }}
+      className={className}
       onClick={() => {
         if (socket) {
           socket.emit("new-group-chat", {

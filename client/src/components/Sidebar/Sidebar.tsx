@@ -158,7 +158,23 @@ props) => {
   return (
     <SidebarContainer>
       <SidebarHeader>
-        <Typography variant="h3">Chats</Typography>
+        <Typography
+          style={{ display: "flex", flexDirection: "row", gap: "8px" }}
+        >
+          <img
+            height="50px"
+            width={"50px"}
+            src={require("../../assets/favicon.ico")}
+            style={{
+              aspectRatio: 3 / 2,
+              objectFit: "contain",
+              mixBlendMode: "darken",
+            }}
+          />
+          <Typography variant="h4" style={{ lineHeight: 1.6 }}>
+            Safe-Chat
+          </Typography>
+        </Typography>
         <InputBase
           placeholder="Search or start new chat"
           onChange={(e: any) => {

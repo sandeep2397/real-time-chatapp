@@ -11,6 +11,7 @@ import { SocketContext } from "../../App";
 import { useGetUserName, useSelectedUserName } from "../../hooks/customHook";
 import { selectedGroupOrPerson } from "../../redux/root_actions";
 import { ContactItemContainer, Timestamp } from "./Sidebar.styles";
+import "../../App.css";
 
 interface ContactItemProps {
   preferedName: string;
@@ -52,6 +53,18 @@ const ContactItem: React.FC<ContactItemProps> = ({
   const currChattingUser = selectedUserName === username;
   const isTyping = duoUsersTypingData?.includes(username);
 
+  const [className, setClassName] = useState("group-item");
+
+  useEffect(() => {
+    setClassName("group-item group-item-enter");
+
+    const timer = setTimeout(() => {
+      setClassName("group-item");
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [username]);
+
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
 
@@ -60,6 +73,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
       style={{
         backgroundColor: currChattingUser ? `#88dabc` : "#fff",
       }}
+      className={className}
       onClick={() => {
         if (socket) {
           socket.emit("new-user-chat", {

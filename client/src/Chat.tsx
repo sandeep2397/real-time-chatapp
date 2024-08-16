@@ -62,20 +62,21 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
 
   const [groupUserTypingState, setGroupUserTypingState] = useState<any>({});
   const [notifyChatData, setNotifyUserOrGroup] = useState<any>({});
+  const [shouldSort, setShouldSort] = useState<boolean>(true);
   const [newMessages, setNewMessages] = useState<Record<string, any>[]>([]);
   const [newGroupMessages, setNewGroupMessages] = useState<
     Record<string, any>[]
   >([]);
 
-  useEffect(() => {
-    if (refreshedMsgs && refreshedMsgs?.length > 0) {
-      setMessages(refreshedMsgs);
-      setContactsAndGroups([...(groups || []), ...(contacts || [])]);
-      dispatch(
-        storeSortGroupsAndContacts([...(groups || []), ...(contacts || [])])
-      );
-    }
-  }, [refreshedMsgs]);
+  // useEffect(() => {
+  //   if (refreshedMsgs && refreshedMsgs?.length > 0) {
+  //     setMessages(refreshedMsgs);
+  //     setContactsAndGroups([...(groups || []), ...(contacts || [])]);
+  //     dispatch(
+  //       storeSortGroupsAndContacts([...(groups || []), ...(contacts || [])])
+  //     );
+  //   }
+  // }, [refreshedMsgs]);
 
   useEffect(() => {
     if (contacts?.length > 0 || groups?.length > 0) {
@@ -126,7 +127,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   };
 
   useEffect(() => {
-    if (newMessages?.length > 0) {
+    if (newMessages?.length > 0 && shouldSort) {
       const sortedContactsAndGrps = sortGroupsAndContacts(newMessages ?? []);
       setContactsAndGroups(sortedContactsAndGrps);
       dispatch(storeSortGroupsAndContacts(sortedContactsAndGrps));
@@ -135,7 +136,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   }, [newMessages]);
 
   useEffect(() => {
-    if (newGroupMessages?.length > 0) {
+    if (newGroupMessages?.length > 0 && shouldSort) {
       const sortedContactsAndGrps = sortGroupsAndContacts(
         newGroupMessages ?? []
       );
@@ -161,6 +162,8 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
           currentSelUserStr && currentSelUserStr !== "undefined"
             ? JSON.parse(currentSelUserStr)
             : {};
+        setShouldSort(false);
+
         setNewMessages((prevNewMsgs) => {
           const filteredMsgs = prevNewMsgs?.filter(
             (msgInfo: any) => msgInfo?.sender !== currSelUserObj?.username
@@ -186,6 +189,8 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         setNotifyUserOrGroup({
           recipient: msgData?.sender,
         });
+
+        setShouldSort(true);
 
         setNewMessages((prevNewMsgs) => {
           const concatedMsgs = [...prevNewMsgs, msgData];
@@ -266,6 +271,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
           }
         );
         dispatch(saveGroupParticipants(saveParticipants));
+        setShouldSort(false);
 
         setNewGroupMessages((prevNewMsgs) => {
           const filteredMsgs = prevNewMsgs?.filter(
@@ -300,6 +306,7 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         setNotifyUserOrGroup({
           recipient: msgData?.sender,
         });
+        setShouldSort(true);
 
         setNewGroupMessages((prevNewMsgs) => {
           const concatedMsgs = [...prevNewMsgs, msgData];
