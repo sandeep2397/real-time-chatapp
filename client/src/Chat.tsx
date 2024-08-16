@@ -29,6 +29,8 @@ import {
 } from "./redux/root_actions";
 import { cloneDeep } from "lodash";
 import _ from "lodash";
+import ListComponent from "./components/Sidebar/TestComponent";
+import { useResponsive } from "./hooks/useResponsive";
 // const socket = io("http://localhost:4001");
 interface props {
   refreshedMsgs: Array<Record<string, any>>;
@@ -50,6 +52,10 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   const socket = useContext(SocketContext);
   const selectedGrpId = useSelectedGroupId();
   const selectedUserName = useSelectedUserName();
+
+  const breakpoint = useResponsive([700, 1000, 1200]);
+  const [fullScreenChat, showFullScreenChat] = useState<boolean>(false);
+  const [newGroupOrChatLoaded, setNewGroupOrChat] = useState<boolean>(false);
 
   const [typingUsersList, setTypingUsersList] = useState<Array<any>>([]);
   const [duoUsersTypingData, setDuoUsersTypingData] = useState<string[]>([]);
@@ -77,6 +83,14 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   //     );
   //   }
   // }, [refreshedMsgs]);
+
+  // useEffect(() => {
+  //   if (breakpoint === 0) {
+  //     showFullScreenChat(true);
+  //   } else {
+  //     showFullScreenChat(false);
+  //   }
+  // }, [selectedUser]);
 
   useEffect(() => {
     if (contacts?.length > 0 || groups?.length > 0) {
@@ -163,6 +177,10 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
             ? JSON.parse(currentSelUserStr)
             : {};
         setShouldSort(false);
+
+        // if (breakpoint === 0) {
+        //   showFullScreenChat(true);
+        // }
 
         setNewMessages((prevNewMsgs) => {
           const filteredMsgs = prevNewMsgs?.filter(
@@ -272,6 +290,10 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
         );
         dispatch(saveGroupParticipants(saveParticipants));
         setShouldSort(false);
+
+        // if (breakpoint === 0) {
+        //   showFullScreenChat(true);
+        // }
 
         setNewGroupMessages((prevNewMsgs) => {
           const filteredMsgs = prevNewMsgs?.filter(
@@ -405,148 +427,156 @@ const Chat: React.FC<props> = ({ refreshedMsgs }: props) => {
   }, []);
 
   return (
-    <div className="box">
-      {/* <div>
-        {messages.map((msg, index) => (
-          <div key={index}>{msg}</div>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-      />
-      <button onClick={sendMessage}>Send</button> */}
-      <Box display="flex" height="97vh">
-        <Sidebar
-          typingUserList={typingUsersList}
-          groupTypingData={groupUserTypingState}
-          notifyChatData={notifyChatData}
-          newMessages={newMessages}
-          duoUsersTypingData={duoUsersTypingData}
-          newGroupMessages={newGroupMessages}
-          saveContactsAndGroups={saveContactsAndGroups}
-          notifyCount={notifyCount}
-        />
-        <Box display="flex" flexDirection="column" flexGrow={1}>
-          {selectedUserName || selectedGrpId ? (
-            <>
-              <Header
-                typingUserList={typingUsersList}
-                groupTypingData={groupUserTypingState}
-                duoUsersTypingData={duoUsersTypingData}
-                type={selectedGrpId ? "group" : "solo"}
-              />
-              <ChatWindow messages={messages} />
-              <MessageInput
-                callbackUserTyping={(value: string) => {
-                  if (socket) {
-                    const selGroupStr =
-                      sessionStorage.getItem("selected-group");
-                    const selGroupObj =
-                      selGroupStr && selGroupStr !== "undefined"
-                        ? JSON.parse(selGroupStr)
-                        : {};
-                    const selGrpId = selGroupObj?.id;
+    <>
+      {/* {breakpoint === 0 && <div>Mobile View</div>}
+      {breakpoint === 1 && <div>Tablet View</div>}
+      {breakpoint === 2 && <div>Desktop View</div>}
+      {breakpoint === 3 && <div>Large View</div>} */}
+      <div className="box">
+        <Box display="flex" height="97vh">
+          {!fullScreenChat && (
+            <Sidebar
+              typingUserList={typingUsersList}
+              groupTypingData={groupUserTypingState}
+              notifyChatData={notifyChatData}
+              newMessages={newMessages}
+              duoUsersTypingData={duoUsersTypingData}
+              newGroupMessages={newGroupMessages}
+              saveContactsAndGroups={saveContactsAndGroups}
+              notifyCount={notifyCount}
+              onRowClick={() => {
+                if (breakpoint === 0) {
+                  showFullScreenChat(true);
+                }
+              }}
+            />
+          )}
 
-                    const currentSelUserStr = sessionStorage.getItem(
-                      "current-selected-user"
-                    );
-                    const currSelUserObj =
-                      currentSelUserStr && currentSelUserStr !== "undefined"
-                        ? JSON.parse(currentSelUserStr)
-                        : {};
+          {(breakpoint !== 0 || fullScreenChat) && (
+            <Box display="flex" flexDirection="column" flexGrow={1}>
+              {selectedUserName || selectedGrpId ? (
+                <>
+                  <Header
+                    typingUserList={typingUsersList}
+                    groupTypingData={groupUserTypingState}
+                    duoUsersTypingData={duoUsersTypingData}
+                    type={selectedGrpId ? "group" : "solo"}
+                    handleMobileView={() => {
+                      showFullScreenChat(false);
+                    }}
+                  />
+                  <ChatWindow messages={messages} />
+                  <MessageInput
+                    callbackUserTyping={(value: string) => {
+                      if (socket) {
+                        const selGroupStr =
+                          sessionStorage.getItem("selected-group");
+                        const selGroupObj =
+                          selGroupStr && selGroupStr !== "undefined"
+                            ? JSON.parse(selGroupStr)
+                            : {};
+                        const selGrpId = selGroupObj?.id;
 
-                    const selUsername = currSelUserObj?.username;
+                        const currentSelUserStr = sessionStorage.getItem(
+                          "current-selected-user"
+                        );
+                        const currSelUserObj =
+                          currentSelUserStr && currentSelUserStr !== "undefined"
+                            ? JSON.parse(currentSelUserStr)
+                            : {};
 
-                    const topic = selGrpId
-                      ? "group-user-typing"
-                      : "user-typing";
-                    socket.emit(topic, {
-                      sender: authUserName,
-                      recipient: selUsername,
-                      content: value,
-                      groupId: selGrpId,
-                      // fileUrl,
-                      // fileType,
-                      // fileName,
-                    });
-                  }
-                }}
-                sendMessage={(
-                  receivedMsg: string,
-                  fileUrl?: string,
-                  fileType?: string,
-                  fileName?: string
-                ) => {
-                  if (socket) {
-                    if (receivedMsg?.trim()) {
-                      if (selectedGrpId) {
-                        socket.emit("broadcast_new_message", {
-                          content: receivedMsg,
-                          groupId: selectedGrpId,
-                          fileUrl,
-                          fileType,
-                          fileName,
+                        const selUsername = currSelUserObj?.username;
+
+                        const topic = selGrpId
+                          ? "group-user-typing"
+                          : "user-typing";
+                        socket.emit(topic, {
+                          sender: authUserName,
+                          recipient: selUsername,
+                          content: value,
+                          groupId: selGrpId,
+                          // fileUrl,
+                          // fileType,
+                          // fileName,
                         });
-                      } else if (selectedUserName) {
-                        socket.emit("send_message", {
-                          content: receivedMsg,
-                          recipient: selectedUserName,
-                          fileUrl,
-                          fileType,
-                          fileName,
-                        });
-                        dispatch(selectedGroupOrPerson(selectedUser));
                       }
+                    }}
+                    sendMessage={(
+                      receivedMsg: string,
+                      fileUrl?: string,
+                      fileType?: string,
+                      fileName?: string
+                    ) => {
+                      if (socket) {
+                        if (receivedMsg?.trim()) {
+                          if (selectedGrpId) {
+                            socket.emit("broadcast_new_message", {
+                              content: receivedMsg,
+                              groupId: selectedGrpId,
+                              fileUrl,
+                              fileType,
+                              fileName,
+                            });
+                          } else if (selectedUserName) {
+                            socket.emit("send_message", {
+                              content: receivedMsg,
+                              recipient: selectedUserName,
+                              fileUrl,
+                              fileType,
+                              fileName,
+                            });
+                            dispatch(selectedGroupOrPerson(selectedUser));
+                          }
 
-                      const topic = selectedGrpId
-                        ? "group-user-typing"
-                        : "user-typing";
-                      socket.emit(topic, {
-                        sender: authUserName,
-                        recipient: selectedUserName,
-                        content: "",
-                        groupId: selectedGrpId,
-                        // fileUrl,
-                        // fileType,
-                        // fileName,
-                      });
-                    }
-                  }
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  textAlign: "center",
-                  marginTop: "6rem",
-                }}
-              >
-                <img
-                  src={require("./assets/newchat.jpg")}
-                  height="50%"
-                  width={"50%"}
-                  alt="Logo"
-                  style={{
-                    aspectRatio: 3 / 2,
-                    objectFit: "contain",
-                    mixBlendMode: "darken",
-                  }}
-                ></img>
-                <Typography variant="h4">
-                  Start A New Chat with your friend
-                </Typography>
-              </div>{" "}
-            </>
+                          const topic = selectedGrpId
+                            ? "group-user-typing"
+                            : "user-typing";
+                          socket.emit(topic, {
+                            sender: authUserName,
+                            recipient: selectedUserName,
+                            content: "",
+                            groupId: selectedGrpId,
+                            // fileUrl,
+                            // fileType,
+                            // fileName,
+                          });
+                        }
+                      }
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      textAlign: "center",
+                      marginTop: "6rem",
+                    }}
+                  >
+                    <img
+                      src={require("./assets/newchat.jpg")}
+                      height="50%"
+                      width={"50%"}
+                      alt="Logo"
+                      style={{
+                        aspectRatio: 3 / 2,
+                        objectFit: "contain",
+                        mixBlendMode: "darken",
+                      }}
+                    ></img>
+                    <Typography variant="h4">
+                      Start A New Chat with your friend
+                    </Typography>
+                  </div>{" "}
+                </>
+              )}
+            </Box>
           )}
         </Box>
-      </Box>
-    </div>
+      </div>
+    </>
   );
 };
 

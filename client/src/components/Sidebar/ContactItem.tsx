@@ -22,6 +22,7 @@ interface ContactItemProps {
   newMessages?: Array<any>;
   notifyChatData?: any;
   duoUsersTypingData?: string[];
+  onRowClick?: any;
 }
 
 const ContactItem: React.FC<ContactItemProps> = ({
@@ -33,6 +34,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
   notifyChatData,
   newMessages,
   duoUsersTypingData,
+  onRowClick,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -89,6 +91,7 @@ const ContactItem: React.FC<ContactItemProps> = ({
           timestamp,
           avatar,
         };
+        onRowClick && onRowClick(userObj);
 
         sessionStorage.setItem(
           "current-selected-user",

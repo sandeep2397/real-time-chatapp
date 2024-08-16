@@ -27,6 +27,7 @@ import {
   SidebarHeader,
 } from "./Sidebar.styles";
 import _ from "lodash";
+import { useResponsive } from "../../hooks/useResponsive";
 
 interface props {
   groupTypingData: any;
@@ -37,6 +38,7 @@ interface props {
   notifyChatData?: any;
   saveContactsAndGroups: Array<any>;
   notifyCount: number;
+  onRowClick?: any;
 }
 
 const Sidebar: FC<props> = ({
@@ -47,6 +49,7 @@ const Sidebar: FC<props> = ({
   newGroupMessages,
   notifyChatData,
   notifyCount,
+  onRowClick,
 }: // saveContactsAndGroups,
 props) => {
   const navigate = useNavigate();
@@ -57,6 +60,7 @@ props) => {
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const [message, setMessage] = useState("");
   // const [contacts, setContacts] = useState<any>([]);
+  const breakpoint = useResponsive([700, 1000, 1200]);
 
   const data = notifyCount;
   const sortedGroupsAndContacts = useSelector(
@@ -156,7 +160,11 @@ props) => {
   console.log("bindContactsAndGroups=======>", bindContactsAndGroups);
 
   return (
-    <SidebarContainer>
+    <SidebarContainer
+      style={{
+        width: breakpoint === 0 ? "100%" : "30%",
+      }}
+    >
       <SidebarHeader>
         <Typography
           style={{ display: "flex", flexDirection: "row", gap: "8px" }}
@@ -196,6 +204,8 @@ props) => {
                   groupTypingData={groupTypingData}
                   newGroupMessages={newGroupMessages}
                   typingUserList={typingUserList}
+                  index={index}
+                  onRowClick={onRowClick}
                   {...rowInfo}
                 />
                 <Divider variant="middle" style={{ margin: "0px 16px" }} />
@@ -206,6 +216,8 @@ props) => {
                   newMessages={newMessages}
                   notifyChatData={notifyChatData}
                   duoUsersTypingData={duoUsersTypingData}
+                  index={index}
+                  onRowClick={onRowClick}
                   key={index}
                   {...rowInfo}
                 />

@@ -12,12 +12,16 @@ import { ContactInfo, HeaderActions, HeaderContainer } from "./Header.styles";
 import { SocketContext } from "../../App";
 import { cloneDeep } from "lodash";
 import { teal } from "@mui/material/colors";
+import { MdEmojiEmotions } from "react-icons/md";
+import { useResponsive } from "../../hooks/useResponsive";
+import { ArrowLeft, KeyboardBackspace } from "@mui/icons-material";
 
 interface props {
   type: "group" | "solo";
   groupTypingData: any;
   typingUserList: any;
   duoUsersTypingData: string[];
+  handleMobileView: any;
 }
 
 const Header: FC<props> = ({
@@ -25,6 +29,7 @@ const Header: FC<props> = ({
   groupTypingData,
   typingUserList,
   duoUsersTypingData,
+  handleMobileView,
 }: props) => {
   const selectedUser = useSelector((state: any) => state?.Common?.selectedUser);
   const selectedGrpId = useSelectedGroupId();
@@ -41,10 +46,23 @@ const Header: FC<props> = ({
   // const socket = useSelector((state: any) => state?.Common?.socket);
   const socket = useContext(SocketContext);
   const isTyping = duoUsersTypingData?.includes(selectedUserName);
+  const breakpoint = useResponsive([700, 1000, 1200]);
 
   const blobUrl = getBlobImageUrl(selectedUser?.image);
   return (
     <HeaderContainer>
+      {breakpoint === 0 && (
+        <IconButton
+          size="medium"
+          style={{ marginRight: "8px" }}
+          onClick={() => {
+            handleMobileView();
+          }}
+        >
+          <KeyboardBackspace />
+        </IconButton>
+      )}
+
       <Avatar src={blobUrl || "/path/to/avatar.jpg"} />
       <ContactInfo>
         <Typography variant="body1">{selectedUser?.preferedName}</Typography>

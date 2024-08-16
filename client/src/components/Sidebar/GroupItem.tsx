@@ -25,6 +25,7 @@ interface Props {
   groupTypingData?: any;
   typingUserList: any;
   newGroupMessages?: Array<any>;
+  onRowClick?: any;
 }
 
 const GroupItem: React.FC<Props> = ({
@@ -37,6 +38,7 @@ const GroupItem: React.FC<Props> = ({
   groupTypingData,
   typingUserList,
   newGroupMessages,
+  onRowClick,
 }) => {
   const dispatch = useDispatch();
   const authUserName = useGetUserName();
@@ -95,7 +97,15 @@ const GroupItem: React.FC<Props> = ({
             // recipient: name,
           });
         }
-
+        const dataObj = {
+          _id,
+          preferedName: name,
+          description,
+          image: groupImage,
+          lastMessage,
+          timestamp,
+        };
+        onRowClick && onRowClick(dataObj);
         const groupObj = {
           type: "group",
           id: _id,
@@ -103,16 +113,7 @@ const GroupItem: React.FC<Props> = ({
 
         sessionStorage.setItem("selected-group", JSON.stringify(groupObj));
         sessionStorage.removeItem("current-selected-user");
-        dispatch(
-          selectedGroupOrPerson({
-            _id,
-            preferedName: name,
-            description,
-            image: groupImage,
-            lastMessage,
-            timestamp,
-          })
-        );
+        dispatch(selectedGroupOrPerson(dataObj));
       }}
     >
       <ListItemAvatar>
