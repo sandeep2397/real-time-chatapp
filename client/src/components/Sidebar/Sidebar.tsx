@@ -226,51 +226,65 @@ props) => {
             );
           })}
       </ContactsList>
-      <ContactItemContainer>
-        <ListItemAvatar>
-          <Avatar
-            alt={!userRegex.test(authUserName) && authUserName?.toUpperCase()}
-            sx={{ bgcolor: deepOrange?.[500], width: 38, height: 38 }}
-            src="/static/images/avatar/2.jpg"
-          />
-        </ListItemAvatar>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <ListItemText
-            secondary={"Logged In As"}
-            style={{ color: "#a7a7a7" }}
-          />
-          <ListItemText
-            primary={`${authUserName}`}
-            style={{ margin: "0px", fontWeight: 500 }}
-          />
-        </div>
-      </ContactItemContainer>
-
-      <LoginButton
-        style={{ width: "95%", alignSelf: "center" }}
-        onClick={async () => {
-          try {
-            await signOut(customAuth);
-            removeSession();
-            if (socket) {
-              socket.disconnect(); // Disconnect the socket
-              console.log("Socket disconnected:", socket.id);
-            }
-            // dispatch(selectedGroupOrPerson({}));
-            navigate("/login");
-          } catch (err) {
-            console.error("Err===>", err);
-          }
+      <ContactItemContainer
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
         }}
-        variant="contained"
-        type="submit"
-        startIcon={<MdLogout />}
-        // disabled={state?.username === '' || state?.password === ''}
       >
-        <WelcomeLabel color={theme?.palette?.primary?.contrastText}>
-          {"Logout"}
-        </WelcomeLabel>
-      </LoginButton>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "8px",
+          }}
+        >
+          <ListItemAvatar>
+            <Avatar
+              alt={!userRegex.test(authUserName) && authUserName?.toUpperCase()}
+              sx={{ bgcolor: deepOrange?.[500], width: 38, height: 38 }}
+              src="/static/images/avatar/2.jpg"
+            />
+          </ListItemAvatar>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <ListItemText
+              secondary={"Logged In As"}
+              style={{ color: "#a7a7a7" }}
+            />
+            <ListItemText
+              primary={`${authUserName}`}
+              style={{ margin: "0px", fontWeight: 500 }}
+            />
+          </div>
+        </div>
+
+        <LoginButton
+          style={{ width: "45%", alignSelf: "center" }}
+          onClick={async () => {
+            try {
+              await signOut(customAuth);
+              removeSession();
+              if (socket) {
+                socket.disconnect(); // Disconnect the socket
+                console.log("Socket disconnected:", socket.id);
+              }
+              // dispatch(selectedGroupOrPerson({}));
+              navigate("/login");
+            } catch (err) {
+              console.error("Err===>", err);
+            }
+          }}
+          variant="contained"
+          type="submit"
+          startIcon={<MdLogout />}
+          // disabled={state?.username === '' || state?.password === ''}
+        >
+          <WelcomeLabel color={theme?.palette?.primary?.contrastText}>
+            {"Logout"}
+          </WelcomeLabel>
+        </LoginButton>
+      </ContactItemContainer>
     </SidebarContainer>
   );
 };

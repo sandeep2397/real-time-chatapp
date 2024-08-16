@@ -40,7 +40,8 @@
 .box {
   height: 92vh;
   /* width: 100%; */
-  margin: 16px;
+  margin: 8px;
+
   background-image: url("./assets/wallpaper.jpg");
 }
 
