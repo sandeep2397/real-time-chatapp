@@ -222,6 +222,7 @@ function convertTo12HourFormat() {
 
   // Format date and time separately
   const formattedDate = date.toLocaleDateString('en-US', {
+    timeZone: 'Asia/Kolkata',
     month: 'long',
     year: 'numeric',
     day: 'numeric',
@@ -568,7 +569,7 @@ io.on('connection', async (socket) => {
   socket.on('reconnect', () => {
     clearTimeout(disconnectTimeout);
     console.log('User reconnected:', socket.id);
-    // Handle reconnection logic
+    // Handle reconnection logicF
   });
 });
 
